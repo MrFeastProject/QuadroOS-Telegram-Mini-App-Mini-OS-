@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuadroOS</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: #000;
+            color: white;
+        }
+
+        /* Mobile Block */
+        #mobile-block {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            z-index: 99999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        #mobile-block i {
+            font-size: 4em;
+            color: #ff4444;
+            margin-bottom: 20px;
+        }
+
+        #mobile-block h1 {
+            font-size: 1.8em;
+            text-shadow: 0 0 20px #00d4ff;
+        }
+
+        /* Boot Screen */
+        #boot-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #0d1529 0%, #0a0e27 100%);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .boot-logo {
+            width: 140px;
+            height: 140px;
+            background: linear-gradient(135deg, #00d4ff, #0066ff);
+            border-radius: 25px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3.5em;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 0 50px rgba(0, 212, 255, 0.8),
+                        0 0 100px rgba(0, 102, 255, 0.5),
+                        inset 0 0 30px rgba(255, 255, 255, 0.1);
+            animation: pulse 2s ease-in-out infinite;
+            margin-bottom: 40px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 50px rgba(0, 212, 255, 0.8); }
+            50% { transform: scale(1.05); box-shadow: 0 0 70px rgba(0, 212, 255, 1); }
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(0, 212, 255, 0.2);
+            border-top: 4px solid #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Welcome Text */
+        #welcome-text {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #0d1529 0%, #000 100%);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .welcome-message {
+            font-size: 3em;
+            font-weight: 300;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            text-shadow: 0 0 30px rgba(0, 212, 255, 0.8);
+            background: linear-gradient(135deg, #00d4ff, #0066ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .welcome-message.show {
+            opacity: 1;
+        }
+
+        /* Desktop */
+        #desktop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0d1529 100%);
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 102, 255, 0.1) 0%, transparent 50%);
+            display: none;
+            overflow: hidden;
+        }
+
+        /* Desktop Icons */
+        .desktop-icon {
+            position: absolute;
+            width: 80px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .desktop-icon:hover {
+            background: rgba(0, 212, 255, 0.1);
+            transform: scale(1.05);
+        }
+
+        .desktop-icon.dragging {
+            opacity: 0.7;
+            z-index: 1000;
+        }
+
+        .icon-svg {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 102, 255, 0.2));
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 8px;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .icon-svg i {
+            font-size: 1.8em;
+            color: #00d4ff;
+        }
+
+        .icon-label {
+            font-size: 0.85em;
+            color: white;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Taskbar */
+        #taskbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: rgba(10, 14, 39, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0, 212, 255, 0.3);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 1000;
+        }
+
+        #start-button {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #00d4ff, #0066ff);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 15px;
+        }
+
+        #start-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.6);
+        }
+
+        #start-button i {
+            font-size: 1.5em;
+            color: white;
+        }
+
+        .taskbar-time {
+            margin-left: auto;
+            font-size: 0.9em;
+            color: #00d4ff;
+        }
+
+        /* Start Menu */
+        #start-menu {
+            position: fixed;
+            bottom: 70px;
+            left: 20px;
+            width: 300px;
+            background: rgba(10, 14, 39, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 15px;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1001;
+            padding: 20px;
+        }
+
+        .start-menu-item {
+            padding: 12px 15px;
+            margin: 5px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .start-menu-item:hover {
+            background: rgba(0, 212, 255, 0.15);
+        }
+
+        .start-menu-item i {
+            color: #00d4ff;
+            font-size: 1.2em;
+        }
+
+        /* Windows */
+        .window {
+            position: absolute;
+            background: rgba(10, 14, 39, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 15px;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+            min-width: 400px;
+            min-height: 300px;
+            display: none;
+            z-index: 500;
+        }
+
+        .window-header {
+            height: 40px;
+            background: linear-gradient(90deg, rgba(0, 212, 255, 0.2), transparent);
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            cursor: move;
+        }
+
+        .window-title {
+            flex: 1;
+            font-size: 0.95em;
+            color: #00d4ff;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .window-control {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .window-close { background: #ff4444; }
+        .window-minimize { background: #ffaa00; }
+        .window-maximize { background: #00ff88; }
+
+        .window-content {
+            padding: 20px;
+            max-height: calc(100% - 40px);
+            overflow-y: auto;
+        }
+
+        .info-row {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(0, 212, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #00d4ff;
+        }
+
+        .info-label {
+            color: #00d4ff;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            color: white;
+        }
+
+        /* Shutdown Dialog */
+        #shutdown-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 10000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .shutdown-box {
+            background: linear-gradient(135deg, #0a0e27, #1a1f3a);
+            padding: 40px;
+            border-radius: 20px;
+            border: 2px solid #00d4ff;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(0, 212, 255, 0.5);
+        }
+
+        .shutdown-box i {
+            font-size: 3em;
+            color: #00d4ff;
+            margin-bottom: 20px;
+        }
+
+        .shutdown-box h2 {
+            margin-bottom: 15px;
+            color: white;
+        }
+
+        .shutdown-box p {
+            color: #aaa;
+            margin-bottom: 20px;
+        }
+
+        .shutdown-progress {
+            width: 200px;
+            height: 4px;
+            background: rgba(0, 212, 255, 0.2);
+            border-radius: 2px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .shutdown-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #0066ff);
+            width: 0%;
+            transition: width 3s ease;
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Block -->
+    <div id="mobile-block">
+        <i class="fas fa-mobile-alt"></i>
+        <h1>Доступ запрещен</h1>
+        <p>QuadroOS доступна только на Windows</p>
+    </div>
+
+    <!-- Boot Screen -->
+    <div id="boot-screen">
+        <div class="boot-logo">Q</div>
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Welcome Text -->
+    <div id="welcome-text">
+        <div class="welcome-message" id="msg1">Привет!</div>
+        <div class="welcome-message" id="msg2">Подождите немного, это того стоит!</div>
+        <div class="welcome-message" id="msg3">Все готово</div>
+    </div>
+
+    <!-- Desktop -->
+    <div id="desktop">
+        <!-- Desktop Icons -->
+        <div class="desktop-icon" style="top: 20px; left: 20px;" data-id="mydevice">
+            <div class="icon-svg">
+                <i class="fas fa-desktop"></i>
+            </div>
+            <div class="icon-label">Мое устройство</div>
+        </div>
+
+        <div class="desktop-icon" style="top: 120px; left: 20px;" data-id="trash">
+            <div class="icon-svg">
+                <i class="fas fa-trash"></i>
+            </div>
+            <div class="icon-label">Корзина</div>
+        </div>
+
+        <div class="desktop-icon" style="top: 220px; left: 20px;" data-id="settings">
+            <div class="icon-svg">
+                <i class="fas fa-cog"></i>
+            </div>
+            <div class="icon-label">Настройки</div>
+        </div>
+
+        <!-- Windows -->
+        <div class="window" id="window-mydevice" style="top: 100px; left: 200px;">
+            <div class="window-header">
+                <div class="window-title">Информация</div>
+                <div class="window-controls">
+                    <div class="window-control window-minimize"></div>
+                    <div class="window-control window-maximize"></div>
+                    <div class="window-control window-close"></div>
+                </div>
+            </div>
+            <div class="window-content">
+                <div class="info-row">
+                    <div class="info-label">OperationSystem:</div>
+                    <div class="info-value">QuadroOS</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Version:</div>
+                    <div class="info-value">1.0.1 Pro</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">CPU:</div>
+                    <div class="info-value" id="cpu-info">Определяется...</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">GPU:</div>
+                    <div class="info-value" id="gpu-info">Определяется...</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Key System:</div>
+                    <div class="info-value">F1FGKW-UTGKS-WRRFD-Q23LFS</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Taskbar -->
+        <div id="taskbar">
+            <div id="start-button">
+                <i class="fas fa-bars"></i>
+            </div>
+            <div class="taskbar-time" id="time"></div>
+        </div>
+
+        <!-- Start Menu -->
+        <div id="start-menu">
+            <div class="start-menu-item" onclick="shutdown()">
+                <i class="fas fa-power-off"></i>
+                <span>Завершение работы</span>
+            </div>
+            <div class="start-menu-item" onclick="restart()">
+                <i class="fas fa-redo"></i>
+                <span>Перезагрузка</span>
+            </div>
+            <div class="start-menu-item">
+                <i class="fas fa-cog"></i>
+                <span>Настройки</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shutdown Dialog -->
+    <div id="shutdown-dialog">
+        <div class="shutdown-box">
+            <i class="fas fa-power-off"></i>
+            <h2>Завершение работы</h2>
+            <p>Сохранение данных...</p>
+            <div class="shutdown-progress">
+                <div class="shutdown-progress-bar" id="shutdown-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        // Check if mobile
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        if (isMobile()) {
+            document.getElementById('mobile-block').style.display = 'flex';
+        } else {
+            // Boot sequence
+            setTimeout(() => {
+                document.getElementById('boot-screen').style.display = 'none';
+                showWelcomeSequence();
+            }, 3000);
+        }
+
+        // Welcome sequence
+        function showWelcomeSequence() {
+            const welcomeText = document.getElementById('welcome-text');
+            const msg1 = document.getElementById('msg1');
+            const msg2 = document.getElementById('msg2');
+            const msg3 = document.getElementById('msg3');
+
+            welcomeText.style.display = 'flex';
+            
+            // Show "Привет!"
+            setTimeout(() => {
+                msg1.classList.add('show');
+            }, 100);
+
+            setTimeout(() => {
+                msg1.classList.remove('show');
+            }, 2000);
+
+            // Show "Подождите немного..."
+            setTimeout(() => {
+                msg2.classList.add('show');
+            }, 3000);
+
+            setTimeout(() => {
+                msg2.classList.remove('show');
+            }, 10000);
+
+            // Show "Все готово"
+            setTimeout(() => {
+                msg3.classList.add('show');
+            }, 11000);
+
+            setTimeout(() => {
+                msg3.classList.remove('show');
+                welcomeText.style.display = 'none';
+                document.getElementById('desktop').style.display = 'block';
+                detectHardware();
+            }, 12000);
+        }
+
+        // Detect hardware info
+        function detectHardware() {
+            // CPU detection (simplified)
+            const cpuCores = navigator.hardwareConcurrency || 'Неизвестно';
+            document.getElementById('cpu-info').textContent = `${cpuCores} ядер`;
+
+            // GPU detection (simplified)
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            if (gl) {
+                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                if (debugInfo) {
+                    const gpu = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                    document.getElementById('gpu-info').textContent = gpu;
+                }
+            }
+        }
+
+        // Icon dragging
+        let draggedIcon = null;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+
+        document.querySelectorAll('.desktop-icon').forEach(icon => {
+            icon.addEventListener('mousedown', startDrag);
+            icon.addEventListener('touchstart', startDrag, {passive: false});
+        });
+
+        function startDrag(e) {
+            e.preventDefault();
+            draggedIcon = this;
+            const rect = draggedIcon.getBoundingClientRect();
+            const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            dragOffsetX = clientX - rect.left;
+            dragOffsetY = clientY - rect.top;
+            draggedIcon.classList.add('dragging');
+
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+            document.addEventListener('touchmove', drag, {passive: false});
+            document.addEventListener('touchend', stopDrag);
+        }
+
+        function drag(e) {
+            if (!draggedIcon) return;
+            e.preventDefault();
+            const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            draggedIcon.style.left = (clientX - dragOffsetX) + 'px';
+            draggedIcon.style.top = (clientY - dragOffsetY) + 'px';
+        }
+
+        function stopDrag() {
+            if (draggedIcon) {
+                draggedIcon.classList.remove('dragging');
+                draggedIcon = null;
+            }
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', stopDrag);
+            document.removeEventListener('touchmove', drag);
+            document.removeEventListener('touchend', stopDrag);
+        }
+
+        // Window controls
+        document.querySelectorAll('.window-close').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.closest('.window').style.display = 'none';
+            });
+        });
+
+        // Open windows
+        document.querySelector('[data-id="mydevice"]').addEventListener('click', () => {
+            document.getElementById('window-mydevice').style.display = 'block';
+        });
+
+        // Trash functionality
+        document.querySelector('[data-id="trash"]').addEventListener('click', () => {
+            alert('Корзина пуста');
+        });
+
+        // Start menu
+        document.getElementById('start-button').addEventListener('click', () => {
+            const menu = document.getElementById('start-menu');
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        });
+
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+            document.getElementById('time').textContent = timeStr;
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // Shutdown
+        function shutdown() {
+            const dialog = document.getElementById('shutdown-dialog');
+            const bar = document.getElementById('shutdown-bar');
+            dialog.style.display = 'flex';
+            
+            setTimeout(() => {
+                bar.style.width = '100%';
+            }, 100);
+
+            setTimeout(() => {
+                tg.close();
+            }, 3500);
+        }
+
+        // Restart
+        function restart() {
+            localStorage.setItem('quadroos_restart', 'true');
+            location.reload();
+        }
+
+        // Window dragging
+        document.querySelectorAll('.window-header').forEach(header => {
+            header.addEventListener('mousedown', startWindowDrag);
+        });
+
+        let draggedWindow = null;
+        let windowOffsetX = 0;
+        let windowOffsetY = 0;
+
+        function startWindowDrag(e) {
+            draggedWindow = this.parentElement;
+            const rect = draggedWindow.getBoundingClientRect();
+            windowOffsetX = e.clientX - rect.left;
+            windowOffsetY = e.clientY - rect.top;
+
+            document.addEventListener('mousemove', dragWindow);
+            document.addEventListener('mouseup', stopWindowDrag);
+        }
+
+        function dragWindow(e) {
+            if (!draggedWindow) return;
+            draggedWindow.style.left = (e.clientX - windowOffsetX) + 'px';
+            draggedWindow.style.top = (e.clientY - windowOffsetY) + 'px';
+        }
+
+        function stopWindowDrag() {
+            draggedWindow = null;
+            document.removeEventListener('mousemove', dragWindow);
+            document.removeEventListener('mouseup', stopWindowDrag);
+        }
+
+        // Close start menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#start-menu') && !e.target.closest('#start-button')) {
+                document.getElementById('start-menu').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
