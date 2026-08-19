@@ -1,1939 +1,1283 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QuadroOS</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <style>
-        :root {
-            --primary: #00d4ff;
-            --secondary: #0066ff;
-            --bg-dark: #0a0e27;
-            --glass: rgba(10, 14, 39, 0.85);
-            --border: rgba(0, 212, 255, 0.3);
-            --taskbar-height: 50px;
-            --win-bg: #1e1e1e;
-            --win-header: #2d2d2d;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
-        
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background: #000;
-            color: white;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-        }
-
-        /* --- BLOCKERS & BOOT --- */
-        #mobile-block, #boot-screen, #welcome-text, #download-screen, #shutdown-overlay {
-            position: fixed; inset: 0; z-index: 9999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            background: radial-gradient(circle at center, #0d1529 0%, #000 100%);
-        }
-        
-        #mobile-block { display: none; }
-        .hidden-screen { display: none !important; }
-
-        .boot-logo-img {
-            width: 120px; height: 120px; border-radius: 25px;
-            object-fit: contain;
-            box-shadow: 0 0 50px rgba(0, 212, 255, 0.6);
-            animation: pulse 2s infinite;
-            background: rgba(0,0,0,0.2);
-        }
-        
-        .boot-logo-fallback {
-            width: 120px; height: 120px; border-radius: 25px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            display: flex; justify-content: center; align-items: center;
-            font-size: 4em; font-weight: bold; color: white;
-            box-shadow: 0 0 50px rgba(0, 212, 255, 0.6);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-
-        .spinner {
-            width: 40px; height: 40px; border: 4px solid rgba(0, 212, 255, 0.2);
-            border-top-color: var(--primary); border-radius: 50%;
-            animation: spin 1s linear infinite; margin-top: 40px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .welcome-msg {
-            font-size: 2.5em; font-weight: 300; opacity: 0; transition: opacity 1s;
-            background: linear-gradient(to right, var(--primary), var(--secondary));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            position: absolute; text-align: center; width: 100%;
-        }
-        .welcome-msg.show { opacity: 1; }
-
-        /* --- DESKTOP --- */
-        #desktop {
-            position: absolute; inset: 0; bottom: var(--taskbar-height);
-            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            overflow: hidden;
-            transition: background-image 0.5s ease;
-        }
-        
-        #desktop-video-bg {
-            position: absolute; inset: 0; width: 100%; height: 100%;
-            object-fit: cover; z-index: -1; display: none;
-        }
-
-        .icon-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, 100px);
-            grid-auto-rows: 120px;
-            width: 100%; height: 100%;
-            padding: 20px;
-            align-content: start;
-            position: relative; z-index: 1;
-        }
-
-        .desktop-icon {
-            width: 100px; height: 120px;
-            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-            padding: 10px; border-radius: 8px; cursor: pointer;
-            transition: background 0.2s;
-            position: relative;
-        }
-        .desktop-icon:hover { background: rgba(255, 255, 255, 0.1); }
-        .desktop-icon.dragging { opacity: 0.5; z-index: 100; }
-
-        .icon-img {
-            width: 64px; height: 64px; border-radius: 16px;
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(5px);
-            display: flex; justify-content: center; align-items: center;
-            font-size: 28px; color: var(--primary);
-            margin-bottom: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
-            overflow: hidden;
-        }
-        
-        .icon-img img { width: 100%; height: 100%; object-fit: cover; }
-
-        .icon-label {
-            font-size: 12px; text-align: center; text-shadow: 0 1px 3px black;
-            word-break: break-word; line-height: 1.2;
-            background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px;
-        }
-
-        /* --- TASKBAR --- */
-        #taskbar {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: var(--taskbar-height);
-            background: var(--glass); backdrop-filter: blur(20px);
-            border-top: 1px solid var(--border);
-            display: flex; align-items: center; padding: 0 15px; z-index: 5000;
-        }
-
-        #start-btn {
-            width: 40px; height: 40px; border-radius: 6px;
-            background: rgba(255,255,255,0.1);
-            display: flex; justify-content: center; align-items: center;
-            cursor: pointer; transition: transform 0.2s; margin-right: 15px;
-            overflow: hidden;
-        }
-        #start-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
-        #start-btn img { width: 100%; height: 100%; object-fit: contain; }
-        #start-btn i { font-size: 20px; color: white; }
-
-        .taskbar-apps {
-            flex: 1; display: flex; gap: 8px; height: 100%; align-items: center;
-            padding-left: 10px;
-        }
-
-        .taskbar-item {
-            width: 40px; height: 40px; border-radius: 6px;
-            display: flex; justify-content: center; align-items: center;
-            cursor: pointer; position: relative; transition: all 0.2s;
-            background: rgba(255,255,255,0.05);
-        }
-        .taskbar-item:hover { background: rgba(255,255,255,0.15); }
-        .taskbar-item i { font-size: 18px; color: var(--primary); }
-        
-        .taskbar-item::after {
-            content: ''; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%);
-            width: 16px; height: 3px; border-radius: 2px; background: transparent;
-            transition: all 0.3s;
-        }
-        .taskbar-item.active::after { background: #00ff88; width: 24px; box-shadow: 0 0 8px #00ff88; }
-        .taskbar-item.minimized::after { background: #ff4444; width: 12px; }
-
-        .taskbar-right {
-            display: flex; align-items: center; gap: 15px; font-size: 12px; color: #ccc;
-        }
-        .clock-container { text-align: right; cursor: pointer; padding: 5px 10px; border-radius: 6px; }
-        .clock-container:hover { background: rgba(255,255,255,0.1); }
-        .time { font-weight: bold; color: var(--primary); }
-
-        /* DateTime Popup */
-        #datetime-popup {
-            position: fixed; bottom: 60px; right: 15px;
-            background: rgba(10, 14, 39, 0.98); backdrop-filter: blur(20px);
-            border-radius: 12px; border: 1px solid var(--border);
-            padding: 20px; min-width: 250px; display: none; z-index: 5001;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-        }
-        .popup-time { font-size: 2.5em; color: var(--primary); font-weight: 300; text-align: center; margin-bottom: 10px; }
-        .popup-date { font-size: 1em; color: #8b9bb8; text-align: center; }
-
-        /* --- WINDOWS --- */
-        .window {
-            position: absolute; min-width: 300px; min-height: 200px;
-            background: var(--win-bg); border: 1px solid #333; border-radius: 8px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-            display: flex; flex-direction: column; overflow: hidden;
-            z-index: 100; transition: transform 0.1s, opacity 0.2s;
-        }
-        .window.maximized { top: 0 !important; left: 0 !important; width: 100% !important; height: calc(100% - var(--taskbar-height)) !important; border-radius: 0; }
-        .window.minimized { opacity: 0; pointer-events: none; transform: scale(0.9); }
-
-        .win-header {
-            height: 32px; background: var(--win-header); display: flex; align-items: center;
-            padding: 0 10px; cursor: default;
-        }
-        .win-title { flex: 1; font-size: 12px; color: #ccc; margin-left: 10px; display: flex; align-items: center; gap: 8px; }
-        .win-title img { width: 16px; height: 16px; object-fit: contain; }
-        
-        .win-controls { display: flex; gap: 0; height: 100%; }
-        .win-btn {
-            width: 46px; height: 100%; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; transition: background 0.2s; font-size: 10px; color: #ccc;
-        }
-        .win-btn:hover { background: rgba(255,255,255,0.1); }
-        .win-btn.close:hover { background: #e81123; color: white; }
-
-        .win-content { flex: 1; padding: 0; overflow: hidden; color: #eee; font-size: 14px; position: relative; display: flex; flex-direction: column; }
-        
-        /* Text Editor */
-        .text-editor {
-            width: 100%; height: 100%; background: #1e1e1e; color: #fff;
-            border: none; outline: none; resize: none; padding: 15px;
-            font-family: 'Consolas', monospace; font-size: 14px; line-height: 1.5;
-        }
-
-        /* --- APP STYLES (Blue Accent) --- */
-        
-        /* Explorer */
-        .explorer-layout { display: flex; height: 100%; background: #1e1e1e; }
-        .explorer-sidebar {
-            width: 200px; background: #252526; border-right: 1px solid #333;
-            padding: 10px; display: flex; flex-direction: column; gap: 5px;
-        }
-        .explorer-nav-item {
-            padding: 8px 12px; border-radius: 4px; cursor: pointer;
-            display: flex; align-items: center; gap: 10px; font-size: 13px; color: #ccc;
-            transition: background 0.2s;
-        }
-        .explorer-nav-item:hover { background: rgba(255,255,255,0.05); }
-        .explorer-nav-item.active { background: rgba(0, 212, 255, 0.15); color: var(--primary); border-left: 2px solid var(--primary); }
-        .explorer-main { flex: 1; padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 15px; align-content: start; overflow-y: auto; }
-        .file-item {
-            display: flex; flex-direction: column; align-items: center; padding: 10px;
-            border-radius: 4px; cursor: pointer; text-align: center; transition: background 0.2s;
-        }
-        .file-item:hover { background: rgba(0, 212, 255, 0.1); }
-        .file-item i { font-size: 32px; margin-bottom: 8px; color: var(--primary); }
-        .file-item span { font-size: 12px; word-break: break-all; color: #ddd; }
-        .upload-btn-area { padding: 10px; border-bottom: 1px solid #333; display: flex; gap: 10px; }
-        .upload-btn {
-            padding: 6px 12px; background: transparent; border: 1px solid var(--primary); color: var(--primary);
-            border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.2s;
-        }
-        .upload-btn:hover { background: var(--primary); color: #000; }
-
-        /* Gallery */
-        .gallery-container { display: flex; height: 100%; background: #1e1e1e; }
-        .gallery-sidebar { width: 150px; background: #252526; border-right: 1px solid #333; padding: 10px; }
-        .gallery-grid { flex: 1; padding: 15px; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; overflow-y: auto; align-content: start; }
-        .gallery-item {
-            aspect-ratio: 1; border-radius: 4px; overflow: hidden;
-            background: #2a2a2a; cursor: pointer; position: relative; border: 1px solid transparent;
-        }
-        .gallery-item:hover { border-color: var(--primary); }
-        .gallery-item img, .gallery-item video { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; pointer-events: none; }
-        .gallery-item:hover img { transform: scale(1.05); }
-        .video-badge { position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.7); color: var(--primary); padding: 2px 6px; border-radius: 4px; font-size: 10px; pointer-events: none; }
-        .system-badge { position: absolute; top: 5px; left: 5px; background: rgba(0, 212, 255, 0.8); color: #000; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; pointer-events: none; }
-
-        /* Music Player */
-        .music-layout { display: flex; height: 100%; background: #1e1e1e; color: #fff; }
-        .music-sidebar { width: 180px; background: #252526; border-right: 1px solid #333; padding: 10px; display: flex; flex-direction: column; gap: 5px; }
-        .music-nav { padding: 10px; border-radius: 4px; cursor: pointer; color: #aaa; font-size: 13px; display: flex; align-items: center; gap: 10px; }
-        .music-nav:hover, .music-nav.active { background: rgba(0, 212, 255, 0.1); color: var(--primary); }
-        
-        .music-main { flex: 1; display: flex; flex-direction: column; position: relative; }
-        .music-view { flex: 1; overflow-y: auto; padding: 20px; display: none; }
-        .music-view.active { display: block; }
-        
-        .player-center { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
-        .album-art-lg { width: 200px; height: 200px; border-radius: 50%; background: #333; margin-bottom: 30px; box-shadow: 0 0 40px rgba(0, 212, 255, 0.2); display: flex; align-items: center; justify-content: center; font-size: 60px; color: #555; border: 4px solid #222; }
-        .track-info-lg { text-align: center; margin-bottom: 20px; }
-        .track-title-lg { font-size: 20px; font-weight: bold; margin-bottom: 5px; color: #fff; }
-        .track-artist-lg { font-size: 14px; color: var(--primary); }
-        
-        .progress-area { width: 80%; max-width: 400px; margin-bottom: 20px; }
-        .seek-bar { width: 100%; height: 4px; background: #444; border-radius: 2px; cursor: pointer; position: relative; }
-        .seek-fill { height: 100%; background: var(--primary); border-radius: 2px; width: 0%; pointer-events: none; }
-        .time-labels { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-top: 5px; }
-        
-        .controls-lg { display: flex; gap: 30px; align-items: center; }
-        .ctrl-btn-lg { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; transition: color 0.2s; }
-        .ctrl-btn-lg:hover { color: var(--primary); }
-        .play-btn-lg { font-size: 40px; color: var(--primary); }
-        .delete-track-btn { margin-top: 20px; padding: 8px 16px; background: rgba(255, 68, 68, 0.2); border: 1px solid #ff4444; color: #ff4444; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
-        .delete-track-btn:hover { background: #ff4444; color: white; }
-        
-        .track-list-table { width: 100%; border-collapse: collapse; }
-        .track-list-table th { text-align: left; padding: 10px; color: #888; font-size: 12px; border-bottom: 1px solid #333; font-weight: normal; }
-        .track-list-table td { padding: 10px; font-size: 13px; border-bottom: 1px solid #2a2a2a; }
-        .track-row { cursor: pointer; transition: background 0.2s; }
-        .track-row:hover { background: rgba(255,255,255,0.05); }
-        .track-row.playing { background: rgba(0, 212, 255, 0.1); color: var(--primary); }
-        .track-row.playing td:first-child { color: var(--primary); }
-
-        /* Stats App */
-        .stats-container { padding: 20px; height: 100%; overflow-y: auto; }
-        .stats-header { font-size: 18px; font-weight: bold; margin-bottom: 20px; color: var(--primary); border-bottom: 1px solid #333; padding-bottom: 10px; }
-        .stats-section-title { font-size: 14px; color: #888; margin: 20px 0 10px; text-transform: uppercase; letter-spacing: 1px; }
-        .chart-container { display: flex; justify-content: center; margin: 20px 0; }
-        .donut-chart {
-            width: 200px; height: 200px; border-radius: 50%;
-            position: relative; display: flex; align-items: center; justify-content: center;
-        }
-        .donut-hole { width: 140px; height: 140px; background: #1e1e1e; border-radius: 50%; }
-        .stats-list { display: flex; flex-direction: column; gap: 10px; }
-        .stat-row { display: flex; justify-content: space-between; padding: 10px; background: #252526; border-radius: 6px; }
-        .stat-label { color: #ccc; }
-        .stat-value { color: var(--primary); font-weight: bold; }
-
-        /* Info Window */
-        .info-content { padding: 20px; overflow-y: auto; }
-        .info-row { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #333; }
-        .info-label { color: #888; font-size: 12px; margin-bottom: 4px; }
-        .info-value { color: #fff; font-size: 14px; font-weight: 500; }
-
-        /* --- MENUS --- */
-        #start-menu {
-            position: fixed; bottom: 60px; left: 15px; width: 320px;
-            background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(20px);
-            border: 1px solid #333; border-radius: 8px;
-            padding: 15px; display: none; z-index: 5001;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        }
-        .search-box { width: 100%; padding: 8px 12px; background: #333; border: 1px solid #444; border-radius: 4px; color: white; margin-bottom: 15px; outline: none; }
-        .search-box:focus { border-color: var(--primary); }
-        .menu-item {
-            padding: 10px 15px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 10px;
-            transition: background 0.2s; color: #ddd; font-size: 13px;
-        }
-        .menu-item:hover { background: rgba(255,255,255,0.1); }
-        .menu-item i { color: var(--primary); width: 20px; text-align: center; }
-        .menu-item img { width: 20px; height: 20px; object-fit: contain; }
-
-        #privacy-modal {
-            position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.9);
-            display: none; justify-content: center; align-items: center; padding: 20px;
-        }
-        .modal-box {
-            background: #1a1a1a; border: 1px solid var(--primary); border-radius: 12px;
-            width: 100%; max-width: 600px; max-height: 80vh; display: flex; flex-direction: column;
-            box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
-        }
-        .modal-header { padding: 20px; border-bottom: 1px solid #333; text-align: center; }
-        .modal-header h2 { color: var(--primary); font-size: 24px; }
-        .modal-body { padding: 20px; overflow-y: auto; flex: 1; font-size: 14px; line-height: 1.6; color: #bbb; }
-        .modal-body h3 { color: white; margin: 15px 0 5px; font-size: 16px; }
-        .modal-footer { padding: 20px; border-top: 1px solid #333; display: flex; align-items: center; gap: 10px; }
-        
-        .checkbox-custom {
-            width: 20px; height: 20px; border: 2px solid var(--primary); border-radius: 4px;
-            cursor: pointer; display: flex; justify-content: center; align-items: center;
-        }
-        .checkbox-custom.checked { background: var(--primary); }
-        .checkbox-custom.checked::after { content: '✓'; color: black; font-weight: bold; font-size: 14px; }
-
-        /* --- DOWNLOAD SCREEN --- */
-        .dl-container { text-align: center; max-width: 400px; }
-        .dl-title { font-size: 24px; color: var(--primary); margin-bottom: 10px; }
-        .dl-desc { color: #888; margin-bottom: 30px; font-size: 14px; }
-        .dl-btn {
-            padding: 12px 30px; background: linear-gradient(90deg, var(--primary), var(--secondary));
-            border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer;
-            font-size: 16px; transition: transform 0.2s;
-        }
-        .dl-btn:hover { transform: scale(1.05); }
-        .progress-wrap { width: 100%; height: 6px; background: #333; border-radius: 3px; margin-top: 20px; overflow: hidden; }
-        .progress-bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; }
-        .dl-status { margin-top: 10px; color: var(--primary); font-size: 14px; }
-
-        /* --- SHUTDOWN OVERLAY --- */
-        .shutdown-box {
-            background: #111; padding: 40px; border-radius: 8px; text-align: center;
-            border: 1px solid #333; min-width: 300px;
-        }
-        .shutdown-spinner {
-            width: 40px; height: 40px; border: 3px solid #333; border-top-color: var(--primary);
-            border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;
-        }
-        .shutdown-text { font-size: 18px; margin-bottom: 5px; }
-        .shutdown-sub { color: #666; font-size: 14px; }
-
-        /* Context Menu */
-        .ctx-menu {
-            position: fixed; background: #2d2d2d; border: 1px solid #444; border-radius: 6px;
-            padding: 5px; display: none; z-index: 9000; min-width: 150px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        }
-        .ctx-item { padding: 8px 12px; cursor: pointer; font-size: 13px; border-radius: 4px; display: flex; align-items: center; gap: 8px; color: #ddd; }
-        .ctx-item:hover { background: var(--primary); color: black; }
-        .ctx-item i { width: 16px; text-align: center; }
-
-        /* Delete Confirm */
-        #delete-confirm {
-            position: fixed; inset: 0; z-index: 10001; background: rgba(0,0,0,0.7);
-            display: none; justify-content: center; align-items: center;
-        }
-        .del-box { background: #222; padding: 25px; border-radius: 8px; text-align: center; border: 1px solid #444; }
-        .del-btns { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
-        .btn-ok { background: #e81123; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; }
-        .btn-cancel { background: #444; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; }
-
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>QuadroOS</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+:root{--primary:#00d4ff;--secondary:#0066ff;--bg-dark:#0a0e27;--glass:rgba(10,14,39,.85);--border:rgba(0,212,255,.3);--taskbar-height:50px;--win-bg:#1e1e1e;--win-header:#2d2d2d;}
+*{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:#fff;overflow:hidden;height:100vh;width:100vw;}
+body.gpu-accel .window,body.gpu-accel .desktop-icon,body.gpu-accel #taskbar,body.gpu-accel .icon-img{transform:translateZ(0);will-change:transform;backface-visibility:hidden;}
+#mobile-block,#boot-screen,#welcome-text,#download-screen,#shutdown-overlay{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;background:radial-gradient(circle at center,#0d1529 0%,#000 100%);}
+#mobile-block{display:none;}
+.hidden-screen{display:none!important;}
+.boot-logo-img{width:120px;height:120px;border-radius:25px;object-fit:contain;box-shadow:0 0 50px rgba(0,212,255,.6);animation:pulse 2s infinite;background:rgba(0,0,0,.2);}
+.boot-logo-fallback{width:120px;height:120px;border-radius:25px;background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;justify-content:center;align-items:center;font-size:4em;font-weight:bold;color:#fff;box-shadow:0 0 50px rgba(0,212,255,.6);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.spinner{width:40px;height:40px;border:4px solid rgba(0,212,255,.2);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin-top:40px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.welcome-msg{font-size:2.5em;font-weight:300;opacity:0;transition:opacity 1s;background:linear-gradient(to right,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;}
+.welcome-msg.show{opacity:1;}
+#desktop{position:absolute;inset:0;bottom:var(--taskbar-height);background:linear-gradient(135deg,#0a0e27 0%,#1a1f3a 100%);background-size:cover;background-position:center;background-repeat:no-repeat;overflow:hidden;}
+#desktop-video-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;display:none;}
+.icon-grid{display:grid;grid-template-columns:repeat(auto-fill,100px);grid-auto-rows:120px;width:100%;height:100%;padding:20px;align-content:start;position:relative;z-index:1;}
+.desktop-icon{width:100px;height:120px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:10px;border-radius:8px;cursor:pointer;transition:background .2s;position:relative;}
+.desktop-icon:hover{background:rgba(255,255,255,.1);}
+.desktop-icon.dragging{opacity:.5;z-index:100;}
+.icon-img{width:64px;height:64px;border-radius:16px;background:rgba(0,0,0,.3);backdrop-filter:blur(5px);display:flex;justify-content:center;align-items:center;font-size:28px;color:var(--primary);margin-bottom:8px;box-shadow:0 4px 15px rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);overflow:hidden;}
+.icon-img img{width:100%;height:100%;object-fit:cover;}
+.icon-label{font-size:12px;text-align:center;text-shadow:0 1px 3px #000;word-break:break-word;line-height:1.2;background:rgba(0,0,0,.4);padding:2px 6px;border-radius:4px;}
+#taskbar{position:fixed;bottom:0;left:0;width:100%;height:var(--taskbar-height);background:var(--glass);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 15px;z-index:5000;}
+#start-btn{width:40px;height:40px;border-radius:6px;background:rgba(255,255,255,.1);display:flex;justify-content:center;align-items:center;cursor:pointer;transition:transform .2s;margin-right:15px;overflow:hidden;}
+#start-btn:hover{background:rgba(255,255,255,.2);transform:scale(1.1);}
+#start-btn img{width:100%;height:100%;object-fit:contain;}
+#start-btn i{font-size:20px;color:#fff;}
+.taskbar-apps{flex:1;display:flex;gap:8px;height:100%;align-items:center;padding-left:10px;}
+.taskbar-item{width:40px;height:40px;border-radius:6px;display:flex;justify-content:center;align-items:center;cursor:pointer;position:relative;transition:all .2s;background:rgba(255,255,255,.05);}
+.taskbar-item:hover{background:rgba(255,255,255,.15);}
+.taskbar-item i{font-size:18px;color:var(--primary);}
+.taskbar-item::after{content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:16px;height:3px;border-radius:2px;background:transparent;transition:all .3s;}
+.taskbar-item.active::after{background:#00ff88;width:24px;box-shadow:0 0 8px #00ff88;}
+.taskbar-item.minimized::after{background:#ff4444;width:12px;}
+.taskbar-right{display:flex;align-items:center;gap:15px;font-size:12px;color:#ccc;}
+.clock-container{text-align:right;cursor:pointer;padding:5px 10px;border-radius:6px;}
+.clock-container:hover{background:rgba(255,255,255,.1);}
+.time{font-weight:bold;color:var(--primary);}
+#datetime-popup{position:fixed;bottom:60px;right:15px;background:rgba(10,14,39,.98);backdrop-filter:blur(20px);border-radius:12px;border:1px solid var(--border);padding:20px;min-width:250px;display:none;z-index:5001;box-shadow:0 10px 40px rgba(0,0,0,.5);}
+.popup-time{font-size:2.5em;color:var(--primary);font-weight:300;text-align:center;margin-bottom:10px;}
+.popup-date{font-size:1em;color:#8b9bb8;text-align:center;}
+.window{position:absolute;min-width:300px;min-height:200px;background:var(--win-bg);border:1px solid #333;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden;z-index:100;transition:transform .1s,opacity .2s;}
+.window.maximized{top:0!important;left:0!important;width:100%!important;height:calc(100% - var(--taskbar-height))!important;border-radius:0;}
+.window.minimized{opacity:0;pointer-events:none;transform:scale(.9);}
+.win-header{height:32px;background:var(--win-header);display:flex;align-items:center;padding:0 10px;cursor:default;flex-shrink:0;}
+.win-title{flex:1;font-size:12px;color:#ccc;margin-left:10px;display:flex;align-items:center;gap:8px;}
+.win-title img{width:16px;height:16px;object-fit:contain;}
+.win-controls{display:flex;height:100%;flex-shrink:0;}
+.win-btn{width:46px;height:100%;display:flex;justify-content:center;align-items:center;cursor:pointer;transition:background .2s;font-size:10px;color:#ccc;}
+.win-btn:hover{background:rgba(255,255,255,.1);}
+.win-btn.close:hover{background:#e81123;color:#fff;}
+.win-content{flex:1;padding:0;overflow:hidden;color:#eee;font-size:14px;position:relative;display:flex;flex-direction:column;min-height:0;}
+.text-editor{width:100%;height:100%;background:#1e1e1e;color:#fff;border:none;outline:none;resize:none;padding:15px;font-family:Consolas,monospace;font-size:14px;line-height:1.5;user-select:text;-webkit-user-select:text;}
+.explorer-layout{display:flex;height:100%;background:#1e1e1e;}
+.explorer-sidebar{width:200px;background:#252526;border-right:1px solid #333;padding:10px;display:flex;flex-direction:column;gap:5px;flex-shrink:0;}
+.explorer-nav-item{padding:8px 12px;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:10px;font-size:13px;color:#ccc;transition:background .2s;}
+.explorer-nav-item:hover{background:rgba(255,255,255,.05);}
+.explorer-nav-item.active{background:rgba(0,212,255,.15);color:var(--primary);border-left:2px solid var(--primary);}
+.explorer-main{flex:1;padding:20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:15px;align-content:start;overflow-y:auto;}
+.file-item{display:flex;flex-direction:column;align-items:center;padding:10px;border-radius:4px;cursor:pointer;text-align:center;transition:background .2s;cursor:grab;}
+.file-item:hover{background:rgba(0,212,255,.1);}
+.file-item i{font-size:32px;margin-bottom:8px;color:var(--primary);}
+.file-item span{font-size:12px;word-break:break-all;color:#ddd;}
+.upload-btn-area{padding:10px;border-bottom:1px solid #333;display:flex;gap:10px;}
+.upload-btn{padding:6px 12px;background:transparent;border:1px solid var(--primary);color:var(--primary);border-radius:4px;cursor:pointer;font-size:12px;transition:all .2s;}
+.upload-btn:hover{background:var(--primary);color:#000;}
+.drag-ghost{position:fixed;z-index:10003;pointer-events:none;background:rgba(0,212,255,.15);border:1px solid var(--primary);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--primary);backdrop-filter:blur(6px);display:flex;gap:8px;align-items:center;max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.gallery-container{display:flex;height:100%;background:#1e1e1e;}
+.gallery-sidebar{width:150px;background:#252526;border-right:1px solid #333;padding:10px;flex-shrink:0;}
+.gallery-grid{flex:1;padding:15px;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;overflow-y:auto;align-content:start;}
+.gallery-item{aspect-ratio:1;border-radius:4px;overflow:hidden;background:#2a2a2a;cursor:pointer;position:relative;border:1px solid transparent;}
+.gallery-item:hover{border-color:var(--primary);}
+.gallery-item img,.gallery-item video{width:100%;height:100%;object-fit:cover;transition:transform .3s;pointer-events:none;}
+.gallery-item:hover img{transform:scale(1.05);}
+.video-badge{position:absolute;bottom:5px;right:5px;background:rgba(0,0,0,.7);color:var(--primary);padding:2px 6px;border-radius:4px;font-size:10px;pointer-events:none;}
+.system-badge{position:absolute;top:5px;left:5px;background:rgba(0,212,255,.8);color:#000;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:bold;pointer-events:none;}
+.music-layout{display:flex;height:100%;background:#1e1e1e;color:#fff;}
+.music-sidebar{width:180px;background:#252526;border-right:1px solid #333;padding:10px;display:flex;flex-direction:column;gap:5px;flex-shrink:0;}
+.music-nav{padding:10px;border-radius:4px;cursor:pointer;color:#aaa;font-size:13px;display:flex;align-items:center;gap:10px;}
+.music-nav:hover,.music-nav.active{background:rgba(0,212,255,.1);color:var(--primary);}
+.music-main{flex:1;display:flex;flex-direction:column;position:relative;min-width:0;}
+.music-view{flex:1;overflow-y:auto;padding:20px;display:none;}
+.music-view.active{display:block;}
+.player-center{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;}
+.album-art-lg{width:200px;height:200px;border-radius:50%;background:#333;margin-bottom:30px;box-shadow:0 0 40px rgba(0,212,255,.2);display:flex;align-items:center;justify-content:center;font-size:60px;color:#555;border:4px solid #222;}
+.track-info-lg{text-align:center;margin-bottom:20px;}
+.track-title-lg{font-size:20px;font-weight:bold;margin-bottom:5px;color:#fff;}
+.track-artist-lg{font-size:14px;color:var(--primary);}
+.progress-area{width:80%;max-width:400px;margin-bottom:20px;}
+.seek-bar{width:100%;height:4px;background:#444;border-radius:2px;cursor:pointer;position:relative;}
+.seek-fill{height:100%;background:var(--primary);border-radius:2px;width:0%;pointer-events:none;}
+.time-labels{display:flex;justify-content:space-between;font-size:11px;color:#888;margin-top:5px;}
+.controls-lg{display:flex;gap:30px;align-items:center;}
+.ctrl-btn-lg{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;transition:color .2s;}
+.ctrl-btn-lg:hover{color:var(--primary);}
+.play-btn-lg{font-size:40px;color:var(--primary);}
+.delete-track-btn{margin-top:20px;padding:8px 16px;background:rgba(255,68,68,.2);border:1px solid #ff4444;color:#ff4444;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s;}
+.delete-track-btn:hover{background:#ff4444;color:#fff;}
+.track-list-table{width:100%;border-collapse:collapse;}
+.track-list-table th{text-align:left;padding:10px;color:#888;font-size:12px;border-bottom:1px solid #333;font-weight:normal;}
+.track-list-table td{padding:10px;font-size:13px;border-bottom:1px solid #2a2a2a;}
+.track-row{cursor:pointer;transition:background .2s;}
+.track-row:hover{background:rgba(255,255,255,.05);}
+.track-row.playing{background:rgba(0,212,255,.1);color:var(--primary);}
+.stats-container{padding:20px;height:100%;overflow-y:auto;}
+.stats-header{font-size:18px;font-weight:bold;margin-bottom:20px;color:var(--primary);border-bottom:1px solid #333;padding-bottom:10px;}
+.stats-section-title{font-size:14px;color:#888;margin:20px 0 10px;text-transform:uppercase;letter-spacing:1px;}
+.chart-container{display:flex;justify-content:center;margin:20px 0;}
+.donut-chart{width:200px;height:200px;border-radius:50%;position:relative;display:flex;align-items:center;justify-content:center;}
+.donut-hole{width:140px;height:140px;background:#1e1e1e;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;}
+.donut-total-label{font-size:10px;color:#888;}
+.donut-total-value{font-size:14px;color:var(--primary);font-weight:bold;}
+.stats-list{display:flex;flex-direction:column;gap:10px;}
+.stat-row{display:flex;justify-content:space-between;padding:10px;background:#252526;border-radius:6px;align-items:center;}
+.stat-label{color:#ccc;display:flex;align-items:center;gap:6px;}
+.stat-pct{color:#888;font-size:11px;font-weight:normal;}
+.stat-value{color:var(--primary);font-weight:bold;}
+.info-content{padding:20px;overflow-y:auto;}
+.info-row{margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid #333;}
+.info-label{color:#888;font-size:12px;margin-bottom:4px;}
+.info-value{color:#fff;font-size:14px;font-weight:500;word-break:break-word;}
+.browser-wrap{display:flex;flex-direction:column;height:100%;}
+.browser-bar{display:flex;gap:6px;padding:8px;background:#252526;border-bottom:1px solid #333;flex-shrink:0;}
+.br-btn{width:32px;height:32px;border:1px solid #3a3a3e;background:#1e1e20;border-radius:6px;color:#ccc;cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center;}
+.br-btn:hover{color:var(--primary);border-color:var(--primary);}
+.br-btn.active{background:rgba(0,212,255,.15);color:var(--primary);border-color:var(--primary);}
+.br-address{flex:1;background:#1e1e20;border:1px solid #3a3a3e;border-radius:6px;color:#eee;padding:6px 10px;outline:none;font-size:13px;user-select:text;-webkit-user-select:text;min-width:0;}
+.br-address:focus{border-color:var(--primary);}
+.br-quick{display:flex;gap:8px;padding:6px 8px;background:#202022;border-bottom:1px solid #2c2c2e;flex-wrap:wrap;flex-shrink:0;}
+.br-quick span{font-size:11px;color:var(--primary);cursor:pointer;padding:3px 8px;border:1px solid rgba(0,212,255,.3);border-radius:10px;}
+.br-quick span:hover{background:rgba(0,212,255,.1);}
+.br-frame{flex:1;border:none;background:#fff;width:100%;}
+.br-note{padding:4px 8px;font-size:10px;color:#777;background:#202022;flex-shrink:0;}
+.settings-wrap{padding:20px;overflow-y:auto;height:100%;}
+.settings-title{font-size:18px;font-weight:bold;color:var(--primary);margin-bottom:20px;border-bottom:1px solid #333;padding-bottom:10px;}
+.set-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px;background:#252526;border:1px solid #333;border-radius:8px;margin-bottom:12px;}
+.set-name{display:flex;align-items:center;gap:10px;font-size:13px;color:#ddd;}
+.set-name i{color:var(--primary);width:18px;text-align:center;}
+.qos-switch{position:relative;display:inline-block;flex:none;cursor:pointer;}
+.qos-switch input{display:none;}
+.qos-track{display:block;width:51px;height:31px;border-radius:31px;background:#39393d;transition:.25s;position:relative;box-shadow:inset 0 0 6px rgba(0,0,0,.5);}
+.qos-track::after{content:'';position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;transition:left .25s cubic-bezier(.3,1.2,.4,1);box-shadow:0 2px 6px rgba(0,0,0,.4);}
+.qos-switch input:checked+.qos-track{background:linear-gradient(90deg,var(--secondary),var(--primary));box-shadow:0 0 12px rgba(0,212,255,.5);}
+.qos-switch input:checked+.qos-track::after{left:22px;}
+.limit-scale{margin:-4px 0 12px;padding:14px;background:#202022;border:1px solid #333;border-radius:8px;}
+.limit-stops{display:flex;justify-content:space-between;position:relative;margin:10px 4px 6px;}
+.limit-stops::before{content:'';position:absolute;left:0;right:0;top:50%;height:4px;transform:translateY(-50%);background:#3a3a3e;border-radius:2px;}
+.limit-stop{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;}
+.limit-stop .dot{width:16px;height:16px;border-radius:50%;background:#555;border:2px solid #222;transition:.2s;}
+.limit-stop span{font-size:10px;color:#888;}
+.limit-stop.active .dot{background:var(--primary);box-shadow:0 0 10px var(--primary);}
+.limit-stop.active span{color:var(--primary);font-weight:bold;}
+.limit-note{margin-top:12px;font-size:11px;color:#ff5555;line-height:1.5;}
+.installer-wrap{padding:25px;display:flex;flex-direction:column;gap:20px;height:100%;overflow-y:auto;}
+.installer-title{font-size:18px;font-weight:bold;color:var(--primary);border-bottom:1px solid #333;padding-bottom:10px;}
+.installer-block{background:#252526;border:1px solid #333;border-radius:8px;padding:18px;}
+.installer-block h4{color:#fff;margin-bottom:8px;font-size:14px;}
+.installer-block p{color:#999;font-size:12px;line-height:1.5;margin-bottom:14px;}
+.inst-btn{padding:10px 20px;border:none;border-radius:6px;cursor:pointer;font-weight:bold;font-size:13px;transition:all .2s;}
+.inst-btn.reinstall{background:linear-gradient(90deg,var(--secondary),var(--primary));color:#fff;}
+.inst-btn.uninstall{background:transparent;border:1px solid #ff4444;color:#ff4444;}
+.inst-btn:hover{transform:scale(1.04);}
+#start-menu{position:fixed;bottom:60px;left:15px;width:320px;background:rgba(30,30,30,.95);backdrop-filter:blur(20px);border:1px solid #333;border-radius:8px;padding:15px;display:none;z-index:5001;box-shadow:0 0 20px rgba(0,0,0,.5);}
+.search-box{width:100%;padding:8px 12px;background:#333;border:1px solid #444;border-radius:4px;color:#fff;margin-bottom:15px;outline:none;user-select:text;-webkit-user-select:text;}
+.search-box:focus{border-color:var(--primary);}
+.menu-item{padding:10px 15px;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .2s;color:#ddd;font-size:13px;}
+.menu-item:hover{background:rgba(255,255,255,.1);}
+.menu-item i{color:var(--primary);width:20px;text-align:center;}
+.menu-item img{width:20px;height:20px;object-fit:contain;}
+#privacy-modal{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.96);display:none;justify-content:center;align-items:center;padding:20px;}
+.modal-box{background:#1a1a1a;border:1px solid var(--primary);border-radius:12px;width:100%;max-width:600px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 0 30px rgba(0,212,255,.2);}
+.modal-header{padding:20px;border-bottom:1px solid #333;text-align:center;}
+.modal-header h2{color:var(--primary);font-size:24px;}
+.modal-body{padding:20px;overflow-y:auto;flex:1;font-size:14px;line-height:1.6;color:#bbb;}
+.modal-body h3{color:#fff;margin:15px 0 5px;font-size:16px;}
+.modal-footer{padding:20px;border-top:1px solid #333;display:flex;align-items:center;gap:10px;}
+.checkbox-custom{width:20px;height:20px;border:2px solid var(--primary);border-radius:4px;cursor:pointer;display:flex;justify-content:center;align-items:center;flex:none;}
+.checkbox-custom.checked{background:var(--primary);}
+.checkbox-custom.checked::after{content:'✓';color:#000;font-weight:bold;font-size:14px;}
+.dl-container{text-align:center;max-width:440px;display:flex;flex-direction:column;align-items:center;}
+.dl-title{font-size:24px;color:var(--primary);margin-bottom:10px;}
+.dl-desc{color:#888;margin-bottom:30px;font-size:14px;}
+.dl-btn{padding:12px 30px;background:linear-gradient(90deg,var(--primary),var(--secondary));border:none;border-radius:6px;color:#fff;font-weight:bold;cursor:pointer;font-size:16px;transition:transform .2s;margin:0 auto;}
+.dl-btn:hover{transform:scale(1.05);}
+.progress-wrap{width:340px;max-width:90%;height:6px;background:#333;border-radius:3px;margin-top:20px;overflow:hidden;}
+.progress-bar{height:100%;background:var(--primary);width:0%;transition:width .3s;}
+.dl-status{margin-top:10px;color:var(--primary);font-size:14px;min-height:18px;}
+.shutdown-box{background:#111;padding:40px;border-radius:8px;text-align:center;border:1px solid #333;min-width:300px;}
+.shutdown-spinner{width:40px;height:40px;border:3px solid #333;border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 20px;}
+.shutdown-text{font-size:18px;margin-bottom:5px;}
+.shutdown-sub{color:#666;font-size:14px;}
+.ctx-menu{position:fixed;background:#2d2d2d;border:1px solid #444;border-radius:6px;padding:5px;display:none;z-index:9000;min-width:150px;box-shadow:0 5px 15px rgba(0,0,0,.5);}
+.ctx-item{padding:8px 12px;cursor:pointer;font-size:13px;border-radius:4px;display:flex;align-items:center;gap:8px;color:#ddd;}
+.ctx-item:hover{background:var(--primary);color:#000;}
+.ctx-item i{width:16px;text-align:center;}
+#delete-confirm,#rename-modal,#uninstall-confirm{position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.7);display:none;justify-content:center;align-items:center;}
+.del-box{background:#222;padding:25px;border-radius:8px;text-align:center;border:1px solid #444;min-width:320px;}
+.del-box input{width:100%;padding:10px;border-radius:6px;border:1px solid #444;background:#1a1a1c;color:#fff;outline:none;margin:14px 0;user-select:text;-webkit-user-select:text;}
+.del-box input:focus{border-color:var(--primary);}
+.del-btns{display:flex;gap:10px;justify-content:center;margin-top:16px;}
+.btn-ok{background:#e81123;color:#fff;border:none;padding:8px 20px;border-radius:4px;cursor:pointer;}
+.btn-blue{background:var(--secondary);color:#fff;border:none;padding:8px 20px;border-radius:4px;cursor:pointer;}
+.btn-cancel{background:#444;color:#fff;border:none;padding:8px 20px;border-radius:4px;cursor:pointer;}
+#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(20,20,24,.95);border:1px solid var(--primary);color:#eee;padding:10px 18px;border-radius:8px;z-index:10002;display:none;font-size:13px;box-shadow:0 0 20px rgba(0,212,255,.3);}
+</style>
 </head>
 <body>
-
-    <!-- Mobile Block -->
-    <div id="mobile-block">
-        <i class="fas fa-mobile-alt" style="font-size: 4em; color: #ff4444; margin-bottom: 20px;"></i>
-        <h1 style="color: white;">Доступ запрещен</h1>
-        <p style="color: #888;">QuadroOS доступна только на ПК</p>
-    </div>
-
-    <!-- Boot Screen -->
-    <div id="boot-screen">
-        <div class="boot-logo-fallback" id="boot-logo-el">Q</div>
-        <div class="spinner"></div>
-    </div>
-
-    <!-- Welcome Text -->
-    <div id="welcome-text" class="hidden-screen">
-        <div class="welcome-msg" id="msg1">Привет!</div>
-        <div class="welcome-msg" id="msg2">Подождите немного...</div>
-        <div class="welcome-msg" id="msg3">Это того стоит, поверьте!</div>
-        <div class="welcome-msg" id="msg4">Все готово</div>
-    </div>
-
-    <!-- Download Screen -->
-    <div id="download-screen" class="hidden-screen">
-        <div class="dl-container">
-            <div class="dl-title">Скачивание ресурсов QuadroOS</div>
-            <div class="dl-desc">Для корректной работы системы нужно установить ресурсы. Это займет от 2 секунд.</div>
-            <button class="dl-btn" id="start-dl-btn">Скачать ресурсы QuadroOS</button>
-            <div class="progress-wrap" id="dl-progress-wrap" style="display:none;">
-                <div class="progress-bar" id="dl-bar"></div>
-            </div>
-            <div class="dl-status" id="dl-status"></div>
-        </div>
-    </div>
-
-    <!-- Privacy Modal -->
-    <div id="privacy-modal">
-        <div class="modal-box">
-            <div class="modal-header">
-                <h2>Добро пожаловать в QuadroOS</h2>
-            </div>
-            <div class="modal-body">
-                <h3>Политика конфиденциальности и условия использования</h3>
-                <p>Настоящая политика описывает, как мы обрабатываем ваши данные и какие риски связаны с использованием программного обеспечения QuadroOS.</p>
-                
-                <h3>1. Локальное хранение данных</h3>
-                <p>Все пользовательские данные, включая созданные файлы, настройки системы и историю действий, хранятся исключительно локально на вашем устройстве с использованием технологии IndexedDB. Мы не собираем, не передаем и не храним ваши данные на внешних серверах.</p>
-                
-                <h3>2. Безопасность устройства</h3>
-                <p>QuadroOS является веб-приложением. В случае заражения вашего устройства вредоносным ПО, которое может перехватить данные из локального хранилища браузера, или при переполнении памяти устройства, что приведет к нестабильной работе Telegram или ОС, разработчики не несут ответственности. Мы предоставляем инструмент "как есть".</p>
-                
-                <h3>3. Риски утечки данных</h3>
-                <p>Хотя мы применяем современные методы защиты, любое программное обеспечение может содержать уязвимости. Вы используете QuadroOS на свой страх и риск. В случае утечки данных по вине стороннего ПО или уязвимостей браузера, ответственность лежит на пользователе.</p>
-                
-                <h3>4. Стабильность работы</h3>
-                <p>Система находится в стадии активной разработки. Возможны сбои, потеря несохраненных данных при аварийном закрытии вкладки или ошибки отображения. Регулярно делайте резервные копии важных файлов.</p>
-            </div>
-            <div class="modal-footer">
-                <div class="checkbox-custom" id="privacy-check"></div>
-                <span style="font-size: 13px; color: #ccc; cursor: pointer;" id="privacy-label">Я прочитал политику конфиденциальности и принимаю все риски</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Desktop -->
-    <div id="desktop">
-        <video id="desktop-video-bg" autoplay loop muted playsinline></video>
-        <div class="icon-grid" id="icon-grid">
-            <!-- Icons will be generated here -->
-        </div>
-    </div>
-
-    <!-- Taskbar -->
-    <div id="taskbar">
-        <div id="start-btn"><i class="fas fa-bars"></i></div>
-        <div class="taskbar-apps" id="taskbar-apps"></div>
-        <div class="taskbar-right">
-            <div class="clock-container" id="clock">
-                <div class="time" id="time">00:00</div>
-                <div id="date">01.01.2026</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- DateTime Popup -->
-    <div id="datetime-popup">
-        <div class="popup-time" id="popup-time">00:00:00</div>
-        <div class="popup-date" id="popup-date">01.01.2026</div>
-    </div>
-
-    <!-- Start Menu -->
-    <div id="start-menu">
-        <input type="text" class="search-box" id="app-search" placeholder="Поиск программ...">
-        <div id="start-menu-list">
-            <div class="menu-item" onclick="sysShutdown()"><i class="fas fa-power-off"></i> Завершение работы</div>
-            <div class="menu-item" onclick="sysRestart()"><i class="fas fa-redo"></i> Перезагрузка</div>
-            <div class="menu-item" data-app="mydevice" onclick="openApp('mydevice')"><i class="fas fa-desktop"></i> Мое устройство</div>
-            <div class="menu-item" data-app="explorer" onclick="openApp('explorer')"><i class="fas fa-folder-open"></i> Проводник</div>
-            <div class="menu-item" data-app="gallery" onclick="openApp('gallery')"><i class="fas fa-images"></i> Галерея</div>
-            <div class="menu-item" data-app="music" onclick="openApp('music')"><i class="fas fa-music"></i> Музыка</div>
-            <!-- Hidden Stats App for Search -->
-            <div class="menu-item" data-app="stats" onclick="openApp('stats')" style="display:none;"><i class="fas fa-chart-pie"></i> Статистика системы</div>
-        </div>
-    </div>
-
-    <!-- Context Menus -->
-    <div class="ctx-menu" id="ctx-menu">
-        <div class="ctx-item" onclick="createFile('txt')"><i class="fas fa-file-alt"></i> Создать TXT</div>
-        <div class="ctx-item" onclick="createFile('html')"><i class="fas fa-code"></i> Создать HTML</div>
-        <div class="ctx-item" onclick="refreshDesktop()"><i class="fas fa-sync"></i> Обновить</div>
-    </div>
-
-    <div class="ctx-menu" id="file-ctx-menu">
-        <div class="ctx-item" onclick="renameCurrentFile()"><i class="fas fa-pen"></i> Переименовать</div>
-        <div class="ctx-item" onclick="confirmDeleteFile()"><i class="fas fa-trash"></i> Удалить файл</div>
-    </div>
-
-    <div class="ctx-menu" id="gallery-ctx-menu">
-        <div class="ctx-item" onclick="setAsWallpaper()"><i class="fas fa-image"></i> Установить как обои</div>
-        <div class="ctx-item" id="gallery-delete-btn" onclick="confirmDeleteMedia()"><i class="fas fa-trash"></i> Удалить</div>
-    </div>
-
-    <!-- Delete Confirmation -->
-    <div id="delete-confirm">
-        <div class="del-box">
-            <h3 style="margin-bottom: 10px;">Удаление файла</h3>
-            <p style="color: #aaa; font-size: 13px;">Вы уверены? Файл будет удален безвозвратно.</p>
-            <div class="del-btns">
-                <button class="btn-ok" onclick="executeDelete()">ОК</button>
-                <button class="btn-cancel" onclick="cancelDelete()">Отмена</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Shutdown Overlay -->
-    <div id="shutdown-overlay" class="hidden-screen">
-        <div class="shutdown-box">
-            <div class="shutdown-spinner"></div>
-            <div class="shutdown-text" id="shutdown-title">Завершение работы</div>
-            <div class="shutdown-sub" id="shutdown-sub">Сохранение данных...</div>
-        </div>
-    </div>
-
-    <script>
-        // --- SYSTEM CORE ---
-        const tg = window.Telegram?.WebApp || {};
-        const DB_NAME = 'QuadroOS_DB';
-        const STORE_FILES = 'files';
-        const STORE_ICONS = 'icons';
-        const STORE_SYS = 'system';
-        const STORE_RESOURCES = 'resources';
-        let db = null;
-        let windows = [];
-        let openingApp = null; // 🛡️ FIX: флаг против гонок при открытии
-        let lastIconClick = 0; // 🛡️ FIX: debounce для иконок
-        let activeWindowId = null;
-        let fileCounter = 0;
-        let draggedIcon = null;
-        let targetFileForAction = null;
-        let targetMediaForAction = null;
-        let isDragging = false;
-        let dragStartX = 0, dragStartY = 0;
-        
-        let sysIconUrl = null;
-        let sysBgUrl = null;
-        let bootAudio = null;
-        
-        const SYS_MUSIC_ID = 'sys_music';
-        let hiddenSystemTracks = [];
-
-        if (tg && typeof tg.ready === 'function') {
-            try {
-                tg.ready();
-                tg.expand();
-                tg.setHeaderColor('#0a0e27');
-                tg.setBackgroundColor('#0a0e27');
-                if (typeof tg.requestFullscreen === 'function' && !tg.isFullscreen) tg.requestFullscreen();
-            } catch(e) {}
-        }
-
-        if (/Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-            document.getElementById('mobile-block').style.display = 'flex';
-        } else {
-            initSystem();
-        }
-
-        async function initSystem() {
-            await initDB();
-            hiddenSystemTracks = await getFromDB(STORE_SYS, 'hidden_tracks') || [];
-            const firstLoad = await getFromDB(STORE_SYS, 'FirstLoad');
-            
-            if (!firstLoad) {
-                showPrivacyModal();
-            } else {
-                await loadSystemAssets();
-                startBootSequence();
-            }
-        }
-
-        // --- DATABASE ---
-        function initDB() {
-            return new Promise((resolve, reject) => {
-                const req = indexedDB.open(DB_NAME, 2);
-                req.onupgradeneeded = e => {
-                    const d = e.target.result;
-                    if (!d.objectStoreNames.contains(STORE_FILES)) d.createObjectStore(STORE_FILES);
-                    if (!d.objectStoreNames.contains(STORE_ICONS)) d.createObjectStore(STORE_ICONS);
-                    if (!d.objectStoreNames.contains(STORE_SYS)) d.createObjectStore(STORE_SYS);
-                    if (!d.objectStoreNames.contains(STORE_RESOURCES)) d.createObjectStore(STORE_RESOURCES);
-                };
-                req.onsuccess = e => { db = e.target.result; resolve(); };
-                req.onerror = e => reject(e);
-            });
-        }
-
-        function saveToDB(store, key, val) {
-            return new Promise((res, rej) => {
-                const tx = db.transaction([store], 'readwrite');
-                const rq = tx.objectStore(store).put(val, key);
-                rq.onsuccess = () => res();
-                rq.onerror = () => rej(rq.error);
-            });
-        }
-
-        function getFromDB(store, key) {
-            return new Promise((res, rej) => {
-                const tx = db.transaction([store], 'readonly');
-                const rq = tx.objectStore(store).get(key);
-                rq.onsuccess = () => res(rq.result);
-                rq.onerror = () => rej(rq.error);
-            });
-        }
-
-        // --- ASSET MANAGEMENT ---
-        async function loadSystemAssets() {
-            const iconBlob = await getFromDB(STORE_RESOURCES, 'sys_icon');
-            const bgBlob = await getFromDB(STORE_RESOURCES, 'sys_bg');
-            const customBg = await getFromDB(STORE_SYS, 'custom_wallpaper');
-            
-            if (iconBlob) sysIconUrl = URL.createObjectURL(iconBlob);
-            if (bgBlob) sysBgUrl = URL.createObjectURL(bgBlob);
-            
-            applySystemAssets(customBg);
-        }
-
-        function applySystemAssets(customBgData) {
-            if (sysIconUrl) {
-                const bootLogo = document.getElementById('boot-logo-el');
-                if (bootLogo) {
-                    bootLogo.className = 'boot-logo-img';
-                    bootLogo.innerHTML = `<img src="${sysIconUrl}" style="width:100%;height:100%;border-radius:25px;">`;
-                }
-                const startBtn = document.getElementById('start-btn');
-                if (startBtn) startBtn.innerHTML = `<img src="${sysIconUrl}">`;
-            }
-            
-            const desktop = document.getElementById('desktop');
-            const videoBg = document.getElementById('desktop-video-bg');
-            
-            if (customBgData) {
-                if (customBgData.type === 'video') {
-                    desktop.style.backgroundImage = 'none';
-                    videoBg.src = URL.createObjectURL(customBgData.blob);
-                    videoBg.style.display = 'block';
-                    videoBg.play();
-                } else {
-                    videoBg.style.display = 'none';
-                    desktop.style.backgroundImage = `url('${URL.createObjectURL(customBgData.blob)}')`;
-                }
-            } else if (sysBgUrl) {
-                videoBg.style.display = 'none';
-                desktop.style.backgroundImage = `url('${sysBgUrl}')`;
-            }
-        }
-
-        // --- PRIVACY & DOWNLOAD ---
-        function showPrivacyModal() {
-            const modal = document.getElementById('privacy-modal');
-            const check = document.getElementById('privacy-check');
-            const label = document.getElementById('privacy-label');
-            modal.style.display = 'flex';
-            
-            let checked = false;
-            const toggleCheck = () => {
-                checked = !checked;
-                check.classList.toggle('checked', checked);
-                if (checked) {
-                    setTimeout(() => {
-                        modal.style.display = 'none';
-                        showDownloadScreen();
-                    }, 300);
-                }
-            };
-            check.onclick = toggleCheck;
-            label.onclick = toggleCheck;
-        }
-
-        function showDownloadScreen() {
-            const screen = document.getElementById('download-screen');
-            screen.classList.remove('hidden-screen');
-            const btn = document.getElementById('start-dl-btn');
-            const bar = document.getElementById('dl-bar');
-            const status = document.getElementById('dl-status');
-            const wrap = document.getElementById('dl-progress-wrap');
-
-            btn.onclick = async () => {
-                btn.style.display = 'none';
-                wrap.style.display = 'block';
-                
-                const resources = [
-                    { id: 'sys_icon', url: 'https://raw.githubusercontent.com/MrFeastProject/QuadroOS-Telegram-Mini-App-Mini-OS-/refs/heads/main/SystemIcon.png' },
-                    { id: 'sys_bg', url: 'https://raw.githubusercontent.com/MrFeastProject/QuadroOS-Telegram-Mini-App-Mini-OS-/refs/heads/main/SystemDefaultBackground.png' },
-                    { id: 'sys_music', url: 'https://raw.githubusercontent.com/MrFeastProject/QuadroOS-Telegram-Mini-App-Mini-OS-/main/QuadroOS%20download%20music.m4a' }
-                ];
-
-                try {
-                    for (let i = 0; i < resources.length; i++) {
-                        const res = resources[i];
-                        status.textContent = `Загрузка ${res.id}...`;
-                        const response = await fetch(res.url);
-                        const blob = await response.blob();
-                        await saveToDB(STORE_RESOURCES, res.id, blob);
-                        const pct = ((i + 1) / resources.length) * 100;
-                        bar.style.width = pct + '%';
-                    }
-                    
-                    await saveToDB(STORE_SYS, 'FirstLoad', true);
-                    await saveToDB(STORE_SYS, 'install_date', Date.now());
-                    await saveToDB(STORE_SYS, 'total_usage_time', 0);
-                    
-                    status.textContent = 'Ресурсы установлены!';
-                    status.style.color = '#00ff88';
-                    await loadSystemAssets();
-                    
-                    setTimeout(() => {
-                        screen.classList.add('hidden-screen');
-                        startBootSequence();
-                    }, 1000);
-                    
-                } catch(e) {
-                    console.error(e);
-                    status.textContent = 'Ошибка загрузки.';
-                    status.style.color = '#ff4444';
-                    btn.style.display = 'block';
-                    wrap.style.display = 'none';
-                }
-            };
-        }
-
-        // --- BOOT SEQUENCE ---
-        function startBootSequence() {
-            const boot = document.getElementById('boot-screen');
-            setTimeout(() => {
-                boot.classList.add('hidden-screen');
-                runWelcomeText();
-            }, 2500);
-        }
-
-        async function playBootMusic() {
-            try {
-                const blob = await getFromDB(STORE_RESOURCES, 'sys_music');
-                if (blob) {
-                    bootAudio = new Audio(URL.createObjectURL(blob));
-                    bootAudio.loop = true;
-                    bootAudio.volume = 0.5;
-                    await bootAudio.play();
-                }
-            } catch(e) { console.log("Audio autoplay blocked"); }
-        }
-
-        function stopBootMusic() {
-            if (bootAudio) {
-                bootAudio.pause();
-                bootAudio = null;
-            }
-        }
-
-        function runWelcomeText() {
-            playBootMusic();
-            const wrap = document.getElementById('welcome-text');
-            wrap.classList.remove('hidden-screen');
-            const m1 = document.getElementById('msg1');
-            const m2 = document.getElementById('msg2');
-            const m3 = document.getElementById('msg3');
-            const m4 = document.getElementById('msg4');
-
-            m1.classList.add('show');
-            setTimeout(() => {
-                m1.classList.remove('show');
-                setTimeout(() => {
-                    m2.classList.add('show');
-                    setTimeout(() => {
-                        m2.classList.remove('show');
-                        setTimeout(() => {
-                            m3.classList.add('show');
-                            setTimeout(() => {
-                                m3.classList.remove('show');
-                                setTimeout(() => {
-                                    m4.classList.add('show');
-                                    setTimeout(() => {
-                                        m4.classList.remove('show');
-                                        wrap.classList.add('hidden-screen');
-                                        stopBootMusic();
-                                        loadDesktop();
-                                    }, 1500);
-                                }, 2500);
-                            }, 1000);
-                        }, 2000);
-                    }, 1000);
-                }, 2000);
-            }, 2000);
-        }
-
-        // --- DESKTOP & ICONS ---
-        const GRID_W = 100; 
-        const GRID_H = 120; 
-
-        async function loadDesktop() {
-            const grid = document.getElementById('icon-grid');
-            grid.innerHTML = '';
-            applySystemAssets(await getFromDB(STORE_SYS, 'custom_wallpaper'));
-
-            const defaults = [
-                {id: 'mydevice', name: 'Мое устройство', icon: 'fa-desktop', type: 'app'},
-                {id: 'trash', name: 'Корзина', icon: 'fa-trash', type: 'app'},
-                {id: 'settings', name: 'Настройки', icon: 'fa-cog', type: 'app'},
-                {id: 'explorer', name: 'Проводник', icon: 'fa-folder-open', type: 'app'},
-                {id: 'gallery', name: 'Галерея', icon: 'fa-images', type: 'app'},
-                {id: 'music', name: 'Музыка', icon: 'fa-music', type: 'app'}
-            ];
-
-            const savedPos = await getFromDB(STORE_ICONS, 'positions') || {};
-            
-            defaults.forEach((def, index) => {
-                const pos = savedPos[def.id] || {x: 0, y: index};
-                createIconElement(def.id, def.name, def.icon, 'app', pos.x, pos.y);
-            });
-
-            const files = await getFromDB(STORE_FILES, 'user_files') || {};
-            Object.keys(files).forEach((fid, index) => {
-                const f = files[fid];
-                const pos = savedPos[fid] || {x: 0, y: 6 + index};
-                const iconClass = f.type === 'html' ? 'fa-code' : 'fa-file-alt';
-                createIconElement(fid, f.name, iconClass, 'file', pos.x, pos.y);
-            });
-
-            startClock();
-            startUsageTimer();
-        }
-
-        function createIconElement(id, name, iconClass, type, gx, gy) {
-            const el = document.createElement('div');
-            el.className = 'desktop-icon';
-            el.dataset.id = id;
-            el.dataset.type = type;
-            el.style.gridColumnStart = gx + 1;
-            el.style.gridRowStart = gy + 1;
-            
-            let iconContent = `<i class="fas ${iconClass}"></i>`;
-            if (id === 'mydevice' && sysIconUrl) iconContent = `<img src="${sysIconUrl}">`;
-
-            el.innerHTML = `
-                <div class="icon-img">${iconContent}</div>
-                <div class="icon-label">${name}</div>
-            `;
-
-            el.addEventListener('mousedown', startDrag);
-            
-            // 🛡️ FIX: debounce на двойной клик
-            el.addEventListener('dblclick', () => {
-                const now = Date.now();
-                if (now - lastIconClick < 400) return;
-                lastIconClick = now;
-                openApp(id);
-            });
-            
-            el.addEventListener('contextmenu', (e) => {
-                if(type === 'file') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    targetFileForAction = id;
-                    showCtxMenu(e.pageX, e.pageY, 'file-ctx-menu');
-                }
-            });
-
-            document.getElementById('icon-grid').appendChild(el);
-        }
-
-        function startDrag(e) {
-            if(e.button !== 0) return;
-            draggedIcon = this;
-            isDragging = false;
-            dragStartX = e.clientX;
-            dragStartY = e.clientY;
-            
-            function onMove(ev) {
-                if(!draggedIcon) return;
-                const dx = Math.abs(ev.clientX - dragStartX);
-                const dy = Math.abs(ev.clientY - dragStartY);
-                if (!isDragging && (dx > 5 || dy > 5)) {
-                    isDragging = true;
-                    draggedIcon.classList.add('dragging');
-                }
-                if (isDragging) {
-                    draggedIcon.style.position = 'absolute';
-                    draggedIcon.style.left = (ev.clientX - 40) + 'px';
-                    draggedIcon.style.top = (ev.clientY - 40) + 'px';
-                    draggedIcon.style.zIndex = 1000;
-                }
-            }
-
-            function onUp(ev) {
-                document.removeEventListener('mousemove', onMove);
-                document.removeEventListener('mouseup', onUp);
-                if(draggedIcon) {
-                    draggedIcon.classList.remove('dragging');
-                    if (isDragging) {
-                        const gridRect = document.getElementById('icon-grid').getBoundingClientRect();
-                        const x = Math.round((ev.clientX - gridRect.left - 20) / GRID_W);
-                        const y = Math.round((ev.clientY - gridRect.top - 20) / GRID_H);
-                        const finalX = Math.max(0, x);
-                        const finalY = Math.max(0, y);
-                        
-                        draggedIcon.style.position = '';
-                        draggedIcon.style.left = '';
-                        draggedIcon.style.top = '';
-                        draggedIcon.style.zIndex = '';
-                        draggedIcon.style.gridColumnStart = finalX + 1;
-                        draggedIcon.style.gridRowStart = finalY + 1;
-                        saveIconPos(draggedIcon.dataset.id, finalX, finalY);
-                    }
-                    draggedIcon = null;
-                    isDragging = false;
-                }
-            }
-            document.addEventListener('mousemove', onMove);
-            document.addEventListener('mouseup', onUp);
-        }
-
-        async function saveIconPos(id, x, y) {
-            const pos = await getFromDB(STORE_ICONS, 'positions') || {};
-            pos[id] = {x, y};
-            await saveToDB(STORE_ICONS, 'positions', pos);
-        }
-
-        // --- FILE MANAGEMENT ---
-        async function createFile(type) {
-            fileCounter++;
-            const name = `Новый документ ${fileCounter}.${type}`;
-            const id = 'file_' + Date.now();
-            
-            const savedPos = await getFromDB(STORE_ICONS, 'positions') || {};
-            const occupied = new Set();
-            Object.values(savedPos).forEach(p => occupied.add(`${p.x},${p.y}`));
-            
-            let fx = 0, fy = 6; 
-            while(occupied.has(`${fx},${fy}`)) {
-                fx++;
-                if(fx > 8) { fx = 0; fy++; }
-            }
-
-            const files = await getFromDB(STORE_FILES, 'user_files') || {};
-            files[id] = { name, type, content: '' };
-            await saveToDB(STORE_FILES, 'user_files', files);
-            await saveIconPos(id, fx, fy);
-            
-            const iconClass = type === 'html' ? 'fa-code' : 'fa-file-alt';
-            createIconElement(id, name, iconClass, 'file', fx, fy);
-            hideMenus();
-        }
-
-        async function renameCurrentFile() {
-            if(!targetFileForAction) return;
-            const el = document.querySelector(`.desktop-icon[data-id="${targetFileForAction}"] .icon-label`);
-            const currentName = el.textContent;
-            const newName = prompt('Новое имя:', currentName);
-            if(newName && newName !== currentName) {
-                el.textContent = newName;
-                const files = await getFromDB(STORE_FILES, 'user_files');
-                if(files[targetFileForAction]) {
-                    files[targetFileForAction].name = newName;
-                    await saveToDB(STORE_FILES, 'user_files', files);
-                }
-            }
-            hideMenus();
-        }
-
-        function confirmDeleteFile() {
-            document.getElementById('delete-confirm').style.display = 'flex';
-            hideMenus();
-        }
-        
-        function confirmDeleteMedia() {
-            document.getElementById('delete-confirm').style.display = 'flex';
-            hideMenus();
-        }
-
-        function cancelDelete() { document.getElementById('delete-confirm').style.display = 'none'; }
-
-        async function executeDelete() {
-            if(targetFileForAction) {
-                const el = document.querySelector(`.desktop-icon[data-id="${targetFileForAction}"]`);
-                if(el) el.remove();
-                const files = await getFromDB(STORE_FILES, 'user_files');
-                if(files) {
-                    delete files[targetFileForAction];
-                    await saveToDB(STORE_FILES, 'user_files', files);
-                }
-                const pos = await getFromDB(STORE_ICONS, 'positions');
-                if(pos) {
-                    delete pos[targetFileForAction];
-                    await saveToDB(STORE_ICONS, 'positions', pos);
-                }
-                targetFileForAction = null;
-            } else if (targetMediaForAction) {
-                const mediaFiles = await getFromDB(STORE_FILES, 'media_files');
-                if(mediaFiles && mediaFiles[targetMediaForAction]) {
-                    delete mediaFiles[targetMediaForAction];
-                    await saveToDB(STORE_FILES, 'media_files', mediaFiles);
-                    const galWin = windows.find(w => w.id === 'gallery');
-                    if(galWin) loadGallery();
-                }
-                targetMediaForAction = null;
-            }
-            document.getElementById('delete-confirm').style.display = 'none';
-        }
-
-        // --- WALLPAPER LOGIC ---
-        async function setAsWallpaper() {
-            if(!targetMediaForAction) return;
-            
-            let file = null;
-            if (targetMediaForAction === 'sys_bg') {
-                const blob = await getFromDB(STORE_RESOURCES, 'sys_bg');
-                file = { type: 'image/png', blob: blob };
-            } else {
-                const mediaFiles = await getFromDB(STORE_FILES, 'media_files');
-                file = mediaFiles[targetMediaForAction];
-            }
-
-            if(file) {
-                await saveToDB(STORE_SYS, 'custom_wallpaper', { type: file.type.startsWith('video/') ? 'video' : 'image', blob: file.blob });
-                applySystemAssets({ type: file.type.startsWith('video/') ? 'video' : 'image', blob: file.blob });
-            }
-            hideMenus();
-        }
-
-        // ============================================================
-        // 🛡️ WINDOW MANAGER — ПОЛНАЯ ЗАЩИТА ОТ ДУБЛИКАТОВ
-        // ============================================================
-        function createWindow(id, title, content, icon, useSysIcon) {
-            // 🛡️ КРИТИЧЕСКАЯ ЗАЩИТА: проверка дубликатов на нижнем уровне
-            const existing = windows.find(w => w.id === id);
-            if (existing) {
-                focusWindow(id);
-                if (existing.minimized) {
-                    existing.minimized = false;
-                    existing.el.classList.remove('minimized');
-                    updateTaskbar();
-                }
-                return existing.el;
-            }
-
-            const winId = 'win-' + id;
-            const el = document.createElement('div');
-            el.className = 'window';
-            el.id = winId;
-            el.style.top = '100px'; el.style.left = '200px';
-            el.style.width = '600px'; el.style.height = '400px';
-            
-            let iconHtml = `<i class="fas ${icon}" style="color:var(--primary); font-size:12px;"></i>`;
-            if (useSysIcon && sysIconUrl) iconHtml = `<img src="${sysIconUrl}">`;
-
-            el.innerHTML = `
-                <div class="win-header" onmousedown="startWinDrag(event, '${winId}')">
-                    ${iconHtml}
-                    <div class="win-title">${title}</div>
-                    <div class="win-controls">
-                        <div class="win-btn" onclick="toggleMinimize('${id}')"><i class="fas fa-minus"></i></div>
-                        <div class="win-btn" onclick="toggleMaximize('${id}')"><i class="far fa-square"></i></div>
-                        <div class="win-btn close" onclick="closeWindow('${id}')"><i class="fas fa-times"></i></div>
-                    </div>
-                </div>
-                <div class="win-content">${content}</div>
-            `;
-
-            el.addEventListener('mousedown', () => focusWindow(id));
-            document.getElementById('desktop').appendChild(el);
-            
-            windows.push({ id, el, minimized: false, maximized: false });
-            focusWindow(id);
-            updateTaskbar();
-            return el;
-        }
-
-        // 🛡️ FIX: переиспользуемое окно-превью (не плодит копии)
-        function openPreviewWindow(kind, title, innerHTML, icon) {
-            const id = 'preview-' + kind;
-            const existing = windows.find(w => w.id === id);
-            if (existing) {
-                existing.el.querySelector('.win-content').innerHTML = innerHTML;
-                const t = existing.el.querySelector('.win-title');
-                if (t) t.textContent = title;
-                if (existing.minimized) toggleMinimize(id);
-                focusWindow(id);
-                return existing.el;
-            }
-            return createWindow(id, title, innerHTML, icon, false);
-        }
-
-        function openApp(id) {
-            // 🛡️ Защита от гонок между кликами
-            if (openingApp === id) return;
-
-            // Проверка дубликата (продублирована и в createWindow)
-            const existing = windows.find(w => w.id === id);
-            if (existing) {
-                focusWindow(id);
-                if (existing.minimized) toggleMinimize(id);
-                return;
-            }
-
-            openingApp = id; // блокируем повторный вызов
-            const unlock = () => { openingApp = null; };
-
-            let title = 'Приложение';
-            let content = '';
-            let icon = 'fa-window-maximize';
-            let useSysIcon = false;
-
-            if (id === 'mydevice') {
-                title = 'Информация';
-                useSysIcon = true;
-                const cpu = navigator.hardwareConcurrency || 'Unknown';
-                let gpu = 'Unknown';
-                try {
-                    const canvas = document.createElement('canvas');
-                    const gl = canvas.getContext('webgl');
-                    if (gl) {
-                        const ext = gl.getExtension('WEBGL_debug_renderer_info');
-                        if (ext) gpu = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
-                    }
-                } catch(e) {}
-                gpu = gpu.replace('ANGLE (', '').replace(')', '');
-
-                content = `
-                    <div class="info-content">
-                        <div class="info-row"><div class="info-label">OperationSystem</div><div class="info-value">QuadroOS</div></div>
-                        <div class="info-row"><div class="info-label">Version</div><div class="info-value">1.0.1 Pro</div></div>
-                        <div class="info-row"><div class="info-label">CPU</div><div class="info-value">${cpu} Cores</div></div>
-                        <div class="info-row"><div class="info-label">GPU</div><div class="info-value">${gpu}</div></div>
-                        <div class="info-row"><div class="info-label">Key System</div><div class="info-value">F1FGKW-UTGKS-WRRFD-Q23LFS</div></div>
-                    </div>
-                `;
-                icon = 'fa-desktop';
-                createWindow(id, title, content, icon, useSysIcon);
-
-            } else if (id.startsWith('file_')) {
-                // 🛡️ АСИНХРОННОЕ ОТКРЫТИЕ ФАЙЛА с защитой
-                getFromDB(STORE_FILES, 'user_files').then(files => {
-                    if (files && files[id]) {
-                        const f = files[id];
-                        const fileTitle = f.name;
-                        const fileIcon = f.type === 'html' ? 'fa-code' : 'fa-file-alt';
-                        const fileContent = `<textarea class="text-editor" id="editor-${id}" onblur="saveFileContent('${id}', this.value)">${escapeHtml(f.content)}</textarea>`;
-                        createWindow(id, fileTitle, fileContent, fileIcon, false);
-                    }
-                    unlock();
-                }).catch(() => unlock());
-                return; // ⚠️ возвращаем СЮДА, не доходим до конца
-
-            } else if (id === 'explorer') {
-                title = 'Проводник (C:)';
-                icon = 'fa-folder-open';
-                content = `
-                    <div class="explorer-layout">
-                        <div class="explorer-sidebar">
-                            <div class="explorer-nav-item active" onclick="loadExplorerFolder('root', this)"><i class="fas fa-hdd"></i> Диск C:</div>
-                            <div class="explorer-nav-item" onclick="loadExplorerFolder('downloads', this)"><i class="fas fa-download"></i> Downloads</div>
-                            <div class="explorer-nav-item" onclick="loadExplorerFolder('music', this)"><i class="fas fa-music"></i> Music</div>
-                            <div class="explorer-nav-item" onclick="loadExplorerFolder('photos', this)"><i class="fas fa-image"></i> Photos</div>
-                            <div class="explorer-nav-item" onclick="loadExplorerFolder('videos', this)"><i class="fas fa-video"></i> Videos</div>
-                        </div>
-                        <div style="flex:1; display:flex; flex-direction:column;">
-                            <div class="upload-btn-area">
-                                <input type="file" id="file-upload" style="display:none" onchange="handleFileUpload(this)" multiple>
-                                <button class="upload-btn" onclick="document.getElementById('file-upload').click()"><i class="fas fa-upload"></i> Загрузить файлы</button>
-                            </div>
-                            <div class="explorer-main" id="explorer-content"></div>
-                        </div>
-                    </div>
-                `;
-                createWindow(id, title, content, icon, false);
-                setTimeout(() => loadExplorerFolder('root'), 100);
-
-            } else if (id === 'gallery') {
-                title = 'Галерея';
-                icon = 'fa-images';
-                content = `
-                    <div class="gallery-container">
-                        <div class="gallery-sidebar">
-                            <div class="explorer-nav-item active"><i class="fas fa-images"></i> Все медиа</div>
-                        </div>
-                        <div class="gallery-grid" id="gallery-content"></div>
-                    </div>
-                `;
-                createWindow(id, title, content, icon, false);
-                setTimeout(loadGallery, 100);
-
-            } else if (id === 'music') {
-                title = 'Музыка';
-                icon = 'fa-music';
-                content = `
-                    <div class="music-layout">
-                        <div class="music-sidebar">
-                            <div class="music-nav active" onclick="switchMusicTab('player', this)"><i class="fas fa-play-circle"></i> Музыка</div>
-                            <div class="music-nav" onclick="switchMusicTab('list', this)"><i class="fas fa-list"></i> Список</div>
-                        </div>
-                        <div class="music-main">
-                            <div class="music-view active" id="music-player-view">
-                                <div class="player-center">
-                                    <div class="album-art-lg"><i class="fas fa-music"></i></div>
-                                    <div class="track-info-lg">
-                                        <div class="track-title-lg" id="mp-title">Нет треков</div>
-                                        <div class="track-artist-lg" id="mp-artist">QuadroOS Audio</div>
-                                    </div>
-                                    <div class="progress-area">
-                                        <div class="seek-bar" id="mp-seek" onclick="seekMusic(event)">
-                                            <div class="seek-fill" id="mp-fill"></div>
-                                        </div>
-                                        <div class="time-labels">
-                                            <span id="mp-cur">0:00</span>
-                                            <span id="mp-dur">0:00</span>
-                                        </div>
-                                    </div>
-                                    <div class="controls-lg">
-                                        <button class="ctrl-btn-lg" onclick="prevTrack()"><i class="fas fa-step-backward"></i></button>
-                                        <button class="ctrl-btn-lg play-btn-lg" id="mp-play-btn" onclick="togglePlay()"><i class="fas fa-play"></i></button>
-                                        <button class="ctrl-btn-lg" onclick="nextTrack()"><i class="fas fa-step-forward"></i></button>
-                                    </div>
-                                    <button class="delete-track-btn" id="mp-delete-btn" onclick="deleteCurrentTrack()" style="display:none;"><i class="fas fa-trash"></i> Удалить трек</button>
-                                </div>
-                            </div>
-                            <div class="music-view" id="music-list-view">
-                                <table class="track-list-table">
-                                    <thead><tr><th>#</th><th>Название</th><th>Автор</th><th>Время</th></tr></thead>
-                                    <tbody id="mp-tbody"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                createWindow(id, title, content, icon, false);
-                setTimeout(initMusicPlayer, 100);
-
-            } else if (id === 'stats') {
-                title = 'Статистика системы и ее ресурсов';
-                icon = 'fa-chart-pie';
-                content = `<div class="stats-container" id="stats-content">Загрузка...</div>`;
-                createWindow(id, title, content, icon, false);
-                setTimeout(renderStats, 100);
-
-            } else if (id === 'trash') {
-                title = 'Корзина';
-                content = '<div style="padding:20px; text-align:center; color:#666;">Корзина пуста</div>';
-                icon = 'fa-trash';
-                createWindow(id, title, content, icon, false);
-
-            } else if (id === 'settings') {
-                title = 'Настройки';
-                content = '<div style="padding:20px;">Настройки системы в разработке...</div>';
-                icon = 'fa-cog';
-                createWindow(id, title, content, icon, false);
-            }
-
-            unlock();
-        }
-
-        async function saveFileContent(id, content) {
-            const files = await getFromDB(STORE_FILES, 'user_files');
-            if(files && files[id]) {
-                files[id].content = content;
-                await saveToDB(STORE_FILES, 'user_files', files);
-            }
-        }
-
-        // --- STATS LOGIC ---
-        async function startUsageTimer() {
-            setInterval(async () => {
-                let time = await getFromDB(STORE_SYS, 'total_usage_time') || 0;
-                time += 1;
-                await saveToDB(STORE_SYS, 'total_usage_time', time);
-            }, 1000);
-        }
-
-        async function renderStats() {
-            const container = document.getElementById('stats-content');
-            if(!container) return;
-
-            const files = await getFromDB(STORE_FILES, 'user_files') || {};
-            const media = await getFromDB(STORE_FILES, 'media_files') || {};
-            
-            let sizeFiles = 0;
-            Object.values(files).forEach(f => sizeFiles += (f.content?.length || 0));
-            
-            let sizeAudio = 0;
-            let sizeVideoPhoto = 0;
-            Object.values(media).forEach(m => {
-                if(m.type.startsWith('audio/')) sizeAudio += m.blob.size;
-                else sizeVideoPhoto += m.blob.size;
-            });
-
-            const sizeSystem = 5 * 1024 * 1024;
-            const total = sizeSystem + sizeFiles + sizeAudio + sizeVideoPhoto || 1;
-            
-            const pSys = (sizeSystem / total) * 100;
-            const pFiles = (sizeFiles / total) * 100;
-            const pAudio = (sizeAudio / total) * 100;
-            const pMedia = (sizeVideoPhoto / total) * 100;
-
-            const totalTime = await getFromDB(STORE_SYS, 'total_usage_time') || 0;
-            const installDate = await getFromDB(STORE_SYS, 'install_date') || Date.now();
-            
-            const hours = Math.floor(totalTime / 3600);
-            const mins = Math.floor((totalTime % 3600) / 60);
-            const secs = totalTime % 60;
-
-            container.innerHTML = `
-                <div class="stats-header">Статистика системы и ее ресурсов</div>
-                
-                <div class="stats-section-title">Ресурсы системы и файлы</div>
-                <div class="chart-container">
-                    <div class="donut-chart" style="background: conic-gradient(
-                        #00d4ff 0% ${pSys}%, 
-                        #0066ff ${pSys}% ${pSys+pFiles}%, 
-                        #ff00ff ${pSys+pFiles}% ${pSys+pFiles+pAudio}%, 
-                        #ffff00 ${pSys+pFiles+pAudio}% 100%
-                    )">
-                        <div class="donut-hole"></div>
-                    </div>
-                </div>
-                <div class="stats-list">
-                    <div class="stat-row"><span class="stat-label" style="color:#00d4ff">Система</span><span class="stat-value">${formatBytes(sizeSystem)}</span></div>
-                    <div class="stat-row"><span class="stat-label" style="color:#0066ff">Файлы пользователя</span><span class="stat-value">${formatBytes(sizeFiles)}</span></div>
-                    <div class="stat-row"><span class="stat-label" style="color:#ff00ff">Аудио пользователя</span><span class="stat-value">${formatBytes(sizeAudio)}</span></div>
-                    <div class="stat-row"><span class="stat-label" style="color:#ffff00">Видео и Фото пользователя</span><span class="stat-value">${formatBytes(sizeVideoPhoto)}</span></div>
-                </div>
-
-                <div class="stats-section-title">Статистика системы</div>
-                <div class="stats-list">
-                    <div class="stat-row"><span class="stat-label">Время использования</span><span class="stat-value">${hours}ч ${mins}м ${secs}с</span></div>
-                    <div class="stat-row"><span class="stat-label">Дата установки</span><span class="stat-value">${new Date(installDate).toLocaleString()}</span></div>
-                </div>
-            `;
-        }
-
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        // --- EXPLORER LOGIC ---
-        let currentFolder = 'root';
-        async function loadExplorerFolder(folder, navEl) {
-            currentFolder = folder;
-            if(navEl) {
-                const win = navEl.closest('.window');
-                win.querySelectorAll('.explorer-nav-item').forEach(el => el.classList.remove('active'));
-                navEl.classList.add('active');
-            }
-            
-            const container = document.getElementById('explorer-content');
-            if(!container) return;
-            container.innerHTML = '';
-            
-            const files = await getFromDB(STORE_FILES, 'user_files') || {};
-            const mediaFiles = await getFromDB(STORE_FILES, 'media_files') || {};
-            
-            let itemsToShow = [];
-            
-            if (folder === 'root') {
-                Object.keys(files).forEach(k => itemsToShow.push({...files[k], id: k, category: 'doc'}));
-            } else if (folder === 'music') {
-                Object.keys(mediaFiles).forEach(k => { if(mediaFiles[k].type.startsWith('audio/')) itemsToShow.push({...mediaFiles[k], id: k, category: 'media'}); });
-            } else if (folder === 'photos') {
-                Object.keys(mediaFiles).forEach(k => { if(mediaFiles[k].type.startsWith('image/')) itemsToShow.push({...mediaFiles[k], id: k, category: 'media'}); });
-            } else if (folder === 'videos') {
-                Object.keys(mediaFiles).forEach(k => { if(mediaFiles[k].type.startsWith('video/')) itemsToShow.push({...mediaFiles[k], id: k, category: 'media'}); });
-            }
-
-            if(itemsToShow.length === 0) {
-                container.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color:#666; padding:20px;">Папка пуста</div>';
-                return;
-            }
-
-            itemsToShow.forEach(item => {
-                const el = document.createElement('div');
-                el.className = 'file-item';
-                let icon = 'fa-file';
-                if(item.type === 'txt') icon = 'fa-file-alt';
-                else if(item.type === 'html') icon = 'fa-code';
-                else if(item.type.startsWith('image/')) icon = 'fa-image';
-                else if(item.type.startsWith('audio/')) icon = 'fa-music';
-                else if(item.type.startsWith('video/')) icon = 'fa-video';
-                
-                el.innerHTML = `<i class="fas ${icon}"></i><span>${item.name}</span>`;
-                
-                if(item.category === 'doc') {
-                    el.onclick = () => openApp(item.id);
-                } else if (item.type.startsWith('image/')) {
-                    // 🛡️ FIX: переиспользуемое превью
-                    el.onclick = () => openPreviewWindow('image', item.name,
-                        `<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="${URL.createObjectURL(item.blob)}" style="max-width:100%; max-height:100%;"></div>`, 'fa-image');
-                } else if (item.type.startsWith('video/')) {
-                    el.onclick = () => openPreviewWindow('video', item.name,
-                        `<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><video src="${URL.createObjectURL(item.blob)}" controls style="max-width:100%; max-height:100%;"></video></div>`, 'fa-video');
-                } else if (item.type.startsWith('audio/')) {
-                    el.onclick = () => playMediaFile(item);
-                }
-                container.appendChild(el);
-            });
-        }
-
-        async function handleFileUpload(input) {
-            const files = Array.from(input.files);
-            if(!files.length) return;
-            
-            const mediaFiles = await getFromDB(STORE_FILES, 'media_files') || {};
-            
-            for(const file of files) {
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    const blob = new Blob([e.target.result], {type: file.type});
-                    const id = 'media_' + Date.now() + Math.random().toString(36).substr(2, 9);
-                    mediaFiles[id] = { name: file.name, type: file.type, blob: blob };
-                    await saveToDB(STORE_FILES, 'media_files', mediaFiles);
-                    
-                    if(document.getElementById('explorer-content')) loadExplorerFolder(currentFolder);
-                    if(document.getElementById('gallery-content')) loadGallery();
-                    if(document.getElementById('mp-tbody')) initMusicPlayer();
-                };
-                reader.readAsArrayBuffer(file);
-            }
-            input.value = '';
-        }
-
-        // --- GALLERY LOGIC ---
-        async function loadGallery() {
-            const container = document.getElementById('gallery-content');
-            if(!container) return;
-            container.innerHTML = '';
-            
-            // 1. Системные обои (нельзя удалить)
-            if (sysBgUrl) {
-                const el = document.createElement('div');
-                el.className = 'gallery-item';
-                el.innerHTML = `<img src="${sysBgUrl}"><div class="system-badge">SYSTEM</div>`;
-                el.onclick = () => openPreviewWindow('image', 'System Wallpaper',
-                    `<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="${sysBgUrl}" style="max-width:100%; max-height:100%; object-fit:contain;"></div>`, 'fa-image');
-                el.oncontextmenu = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    targetMediaForAction = 'sys_bg';
-                    document.getElementById('gallery-delete-btn').style.display = 'none';
-                    showCtxMenu(e.pageX, e.pageY, 'gallery-ctx-menu');
-                };
-                container.appendChild(el);
-            }
-
-            // 2. Медиа пользователя
-            const mediaFiles = await getFromDB(STORE_FILES, 'media_files') || {};
-            const keys = Object.keys(mediaFiles);
-            const media = keys.map(k => mediaFiles[k]).filter(f => f.type.startsWith('image/') || f.type.startsWith('video/'));
-            
-            if(media.length === 0 && !sysBgUrl) {
-                container.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color:#666; padding:20px;">Нет медиафайлов.</div>';
-                return;
-            }
-            
-            media.forEach((img) => {
-                const mediaId = keys.find(k => mediaFiles[k] === img);
-                const el = document.createElement('div');
-                el.className = 'gallery-item';
-                const url = URL.createObjectURL(img.blob);
-                
-                if(img.type.startsWith('video/')) {
-                    el.innerHTML = `<video src="${url}" muted></video><div class="video-badge"><i class="fas fa-play"></i></div>`;
-                    el.onclick = () => openPreviewWindow('video', img.name,
-                        `<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><video src="${url}" controls autoplay style="max-width:100%; max-height:100%;"></video></div>`, 'fa-video');
-                } else {
-                    el.innerHTML = `<img src="${url}">`;
-                    el.onclick = () => openPreviewWindow('image', img.name,
-                        `<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="${url}" style="max-width:100%; max-height:100%; object-fit:contain;"></div>`, 'fa-image');
-                }
-                
-                el.oncontextmenu = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    targetMediaForAction = mediaId;
-                    document.getElementById('gallery-delete-btn').style.display = 'flex';
-                    showCtxMenu(e.pageX, e.pageY, 'gallery-ctx-menu');
-                };
-                
-                container.appendChild(el);
-            });
-        }
-
-        // --- MUSIC PLAYER LOGIC ---
-        let audioPlayer = new Audio();
-        let playlist = [];
-        let currentTrackIndex = -1;
-
-        function switchMusicTab(tab, el) {
-            const win = el.closest('.window');
-            win.querySelectorAll('.music-nav').forEach(n => n.classList.remove('active'));
-            el.classList.add('active');
-            
-            win.querySelectorAll('.music-view').forEach(v => v.classList.remove('active'));
-            win.querySelector(`#music-${tab}-view`).classList.add('active');
-        }
-
-        async function initMusicPlayer() {
-            const mediaFiles = await getFromDB(STORE_FILES, 'media_files') || {};
-            
-            let systemTrack = null;
-            if (!hiddenSystemTracks.includes(SYS_MUSIC_ID)) {
-                const sysBlob = await getFromDB(STORE_RESOURCES, 'sys_music');
-                if (sysBlob) {
-                    systemTrack = {
-                        name: 'QuadroOS download music.m4a',
-                        type: 'audio/m4a',
-                        blob: sysBlob,
-                        id: SYS_MUSIC_ID,
-                        artist: 'QuadroOS System File'
-                    };
-                }
-            }
-
-            playlist = [];
-            if (systemTrack) playlist.push(systemTrack);
-            
-            for (const key of Object.keys(mediaFiles)) {
-                const f = mediaFiles[key];
-                if (f.type.startsWith('audio/')) {
-                    playlist.push({ ...f, id: key, artist: 'Unknown Artist' });
-                }
-            }
-
-            const tbody = document.getElementById('mp-tbody');
-            if(tbody) {
-                tbody.innerHTML = '';
-                if(playlist.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#666; padding:20px;">Нет музыки</td></tr>';
-                } else {
-                    playlist.forEach((track, idx) => {
-                        const tr = document.createElement('tr');
-                        tr.className = 'track-row';
-                        tr.onclick = () => loadTrack(idx);
-                        tr.innerHTML = `<td>${idx+1}</td><td>${track.name}</td><td>${track.artist || 'Unknown'}</td><td>--:--</td>`;
-                        tbody.appendChild(tr);
-                    });
-                }
-            }
-            
-            if (currentTrackIndex >= playlist.length) currentTrackIndex = -1;
-            
-            if(playlist.length > 0 && currentTrackIndex === -1) loadTrack(0);
-            else if (currentTrackIndex >= 0) {
-                const track = playlist[currentTrackIndex];
-                document.getElementById('mp-title').textContent = track.name;
-                document.getElementById('mp-artist').textContent = track.artist || 'QuadroOS Audio';
-                updateDeleteButtonVisibility(track.id);
-            }
-            
-            audioPlayer.ontimeupdate = updateProgress;
-            audioPlayer.onended = nextTrack;
-            audioPlayer.onloadedmetadata = () => {
-                const dur = document.getElementById('mp-dur');
-                if(dur) dur.textContent = formatTime(audioPlayer.duration);
-            };
-        }
-
-        function updateDeleteButtonVisibility(trackId) {
-            const btn = document.getElementById('mp-delete-btn');
-            if (btn) {
-                btn.style.display = 'block';
-                btn.dataset.trackId = trackId;
-            }
-        }
-
-        async function deleteCurrentTrack() {
-            const btn = document.getElementById('mp-delete-btn');
-            const trackId = btn.dataset.trackId;
-            
-            if (trackId === SYS_MUSIC_ID) {
-                // Системный трек: скрываем из плеера, НО НЕ удаляем с устройства
-                if (!hiddenSystemTracks.includes(SYS_MUSIC_ID)) {
-                    hiddenSystemTracks.push(SYS_MUSIC_ID);
-                    await saveToDB(STORE_SYS, 'hidden_tracks', hiddenSystemTracks);
-                }
-            } else {
-                const mediaFiles = await getFromDB(STORE_FILES, 'media_files');
-                if (mediaFiles && mediaFiles[trackId]) {
-                    delete mediaFiles[trackId];
-                    await saveToDB(STORE_FILES, 'media_files', mediaFiles);
-                }
-            }
-            audioPlayer.pause();
-            audioPlayer.src = '';
-            document.getElementById('mp-title').textContent = 'Нет треков';
-            document.getElementById('mp-artist').textContent = 'QuadroOS Audio';
-            btn.style.display = 'none';
-            currentTrackIndex = -1;
-            initMusicPlayer();
-        }
-
-        function formatTime(s) {
-            if(isNaN(s)) return "0:00";
-            const m = Math.floor(s/60);
-            const sec = Math.floor(s%60);
-            return `${m}:${sec<10?'0':''}${sec}`;
-        }
-
-        function loadTrack(index) {
-            if(index < 0 || index >= playlist.length) return;
-            currentTrackIndex = index;
-            const track = playlist[index];
-            
-            audioPlayer.src = URL.createObjectURL(track.blob);
-            const titleEl = document.getElementById('mp-title');
-            const artistEl = document.getElementById('mp-artist');
-            if(titleEl) titleEl.textContent = track.name;
-            if(artistEl) artistEl.textContent = track.artist || 'QuadroOS Audio';
-            
-            updateDeleteButtonVisibility(track.id);
-            
-            const rows = document.querySelectorAll('.track-row');
-            rows.forEach((r, i) => r.classList.toggle('playing', i === index));
-            
-            audioPlayer.play().then(() => {
-                const btn = document.getElementById('mp-play-btn');
-                if(btn) btn.innerHTML = '<i class="fas fa-pause"></i>';
-            }).catch(e => console.log('Autoplay blocked'));
-        }
-
-        function togglePlay() {
-            if(!audioPlayer.src) return;
-            if(audioPlayer.paused) {
-                audioPlayer.play();
-                document.getElementById('mp-play-btn').innerHTML = '<i class="fas fa-pause"></i>';
-            } else {
-                audioPlayer.pause();
-                document.getElementById('mp-play-btn').innerHTML = '<i class="fas fa-play"></i>';
-            }
-        }
-
-        function nextTrack() {
-            if(playlist.length === 0) return;
-            let next = currentTrackIndex + 1;
-            if(next >= playlist.length) next = 0;
-            loadTrack(next);
-        }
-
-        function prevTrack() {
-            if(playlist.length === 0) return;
-            let prev = currentTrackIndex - 1;
-            if(prev < 0) prev = playlist.length - 1;
-            loadTrack(prev);
-        }
-
-        function updateProgress() {
-            const fill = document.getElementById('mp-fill');
-            const cur = document.getElementById('mp-cur');
-            if(fill && audioPlayer.duration) {
-                const pct = (audioPlayer.currentTime / audioPlayer.duration) * 100;
-                fill.style.width = pct + '%';
-                if(cur) cur.textContent = formatTime(audioPlayer.currentTime);
-            }
-        }
-
-        function seekMusic(e) {
-            const bar = document.getElementById('mp-seek');
-            const rect = bar.getBoundingClientRect();
-            const pct = (e.clientX - rect.left) / rect.width;
-            if(audioPlayer.duration) {
-                audioPlayer.currentTime = pct * audioPlayer.duration;
-            }
-        }
-
-        function playMediaFile(file) {
-            if(file.type.startsWith('audio/')) {
-                openApp('music');
-                setTimeout(() => {
-                    const idx = playlist.findIndex(t => t.name === file.name || t.id === file.id);
-                    if(idx !== -1) loadTrack(idx);
-                }, 200);
-            }
-        }
-
-        // --- WINDOW CONTROLS ---
-        function focusWindow(id) {
-            activeWindowId = id;
-            windows.forEach(w => w.el.style.zIndex = 100);
-            const w = windows.find(x => x.id === id);
-            if(w) w.el.style.zIndex = 200;
-            updateTaskbar();
-        }
-
-        function toggleMinimize(id) {
-            const w = windows.find(x => x.id === id);
-            if(!w) return;
-            w.minimized = !w.minimized;
-            w.el.classList.toggle('minimized', w.minimized);
-            if(!w.minimized) focusWindow(id);
-            updateTaskbar();
-        }
-
-        function toggleMaximize(id) {
-            const w = windows.find(x => x.id === id);
-            if(!w) return;
-            w.maximized = !w.maximized;
-            w.el.classList.toggle('maximized', w.maximized);
-        }
-
-        function closeWindow(id) {
-            const idx = windows.findIndex(x => x.id === id);
-            if(idx > -1) {
-                windows[idx].el.remove();
-                windows.splice(idx, 1);
-                updateTaskbar();
-            }
-        }
-
-        let dragWin = null, dragOffX = 0, dragOffY = 0;
-        function startWinDrag(e, winId) {
-            if(e.target.closest('.win-controls')) return;
-            const w = windows.find(x => x.id === winId.replace('win-',''));
-            if(w && w.maximized) return;
-            
-            dragWin = document.getElementById(winId);
-            const rect = dragWin.getBoundingClientRect();
-            dragOffX = e.clientX - rect.left;
-            dragOffY = e.clientY - rect.top;
-            
-            function move(ev) {
-                if(!dragWin) return;
-                dragWin.style.left = (ev.clientX - dragOffX) + 'px';
-                dragWin.style.top = (ev.clientY - dragOffY) + 'px';
-            }
-            function up() {
-                dragWin = null;
-                document.removeEventListener('mousemove', move);
-                document.removeEventListener('mouseup', up);
-            }
-            document.addEventListener('mousemove', move);
-            document.addEventListener('mouseup', up);
-        }
-
-        function updateTaskbar() {
-            const container = document.getElementById('taskbar-apps');
-            container.innerHTML = '';
-            
-            windows.forEach(w => {
-                const item = document.createElement('div');
-                item.className = 'taskbar-item';
-                if(w.id === activeWindowId && !w.minimized) item.classList.add('active');
-                else if(w.minimized) item.classList.add('minimized');
-                
-                let icon = 'fa-window-maximize';
-                if(w.id === 'mydevice') icon = 'fa-desktop';
-                else if(w.id === 'trash') icon = 'fa-trash';
-                else if(w.id === 'settings') icon = 'fa-cog';
-                else if(w.id === 'explorer') icon = 'fa-folder-open';
-                else if(w.id === 'gallery') icon = 'fa-images';
-                else if(w.id === 'music') icon = 'fa-music';
-                else if(w.id === 'stats') icon = 'fa-chart-pie';
-                else if(w.id.startsWith('preview-image')) icon = 'fa-image';
-                else if(w.id.startsWith('preview-video')) icon = 'fa-video';
-                else if(w.id.startsWith('file_')) icon = w.id.includes('html') ? 'fa-code' : 'fa-file-alt';
-                
-                item.innerHTML = `<i class="fas ${icon}"></i>`;
-                item.onclick = () => {
-                    if(w.id === activeWindowId && !w.minimized) toggleMinimize(w.id);
-                    else {
-                        if(w.minimized) toggleMinimize(w.id);
-                        focusWindow(w.id);
-                    }
-                };
-                container.appendChild(item);
-            });
-        }
-
-        // --- CONTEXT MENUS ---
-        document.getElementById('desktop').addEventListener('contextmenu', (e) => {
-            if(e.target.closest('.desktop-icon')) return;
-            e.preventDefault();
-            showCtxMenu(e.pageX, e.pageY, 'ctx-menu');
-        });
-
-        function showCtxMenu(x, y, menuId) {
-            hideMenus();
-            const menu = document.getElementById(menuId);
-            menu.style.display = 'block';
-            menu.style.left = x + 'px';
-            menu.style.top = y + 'px';
-        }
-
-        function hideMenus() {
-            document.getElementById('ctx-menu').style.display = 'none';
-            document.getElementById('file-ctx-menu').style.display = 'none';
-            document.getElementById('gallery-ctx-menu').style.display = 'none';
-            document.getElementById('start-menu').style.display = 'none';
-            document.getElementById('datetime-popup').style.display = 'none';
-        }
-        
-        document.addEventListener('click', (e) => {
-            if(!e.target.closest('.ctx-menu')) {
-                document.getElementById('ctx-menu').style.display = 'none';
-                document.getElementById('file-ctx-menu').style.display = 'none';
-                document.getElementById('gallery-ctx-menu').style.display = 'none';
-            }
-            if(!e.target.closest('#start-menu') && !e.target.closest('#start-btn')) {
-                document.getElementById('start-menu').style.display = 'none';
-            }
-            if(!e.target.closest('#datetime-popup') && !e.target.closest('#clock')) {
-                document.getElementById('datetime-popup').style.display = 'none';
-            }
-        });
-
-        document.getElementById('start-btn').onclick = (e) => {
-            e.stopPropagation();
-            const m = document.getElementById('start-menu');
-            const isVisible = m.style.display === 'block';
-            hideMenus();
-            if(!isVisible) m.style.display = 'block';
-        };
-
-        // Search in Start Menu
-        document.getElementById('app-search').addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            const items = document.querySelectorAll('#start-menu-list .menu-item');
-            items.forEach(item => {
-                const text = item.textContent.toLowerCase();
-                const app = item.dataset.app;
-                if(app === 'stats') {
-                    item.style.display = text.includes(term) && term.length > 0 ? 'flex' : 'none';
-                } else {
-                    item.style.display = text.includes(term) ? 'flex' : 'none';
-                }
-            });
-        });
-
-        // Clock Popup
-        document.getElementById('clock').onclick = (e) => {
-            e.stopPropagation();
-            const popup = document.getElementById('datetime-popup');
-            const isVisible = popup.style.display === 'block';
-            hideMenus();
-            if(!isVisible) {
-                updateDateTimePopup();
-                popup.style.display = 'block';
-            }
-        };
-
-        // --- CLOCK ---
-        function startClock() {
-            const update = () => {
-                const now = new Date();
-                document.getElementById('time').textContent = now.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
-                document.getElementById('date').textContent = now.toLocaleDateString('ru-RU');
-                updateDateTimePopup();
-            };
-            update();
-            setInterval(update, 1000);
-        }
-
-        function updateDateTimePopup() {
-            const now = new Date();
-            document.getElementById('popup-time').textContent = now.toLocaleTimeString('ru-RU');
-            document.getElementById('popup-date').textContent = now.toLocaleDateString('ru-RU', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'});
-        }
-
-        // --- SHUTDOWN / RESTART ---
-        function sysShutdown() {
-            hideMenus();
-            const overlay = document.getElementById('shutdown-overlay');
-            overlay.classList.remove('hidden-screen');
-            document.getElementById('shutdown-title').textContent = 'Завершение работы';
-            document.getElementById('shutdown-sub').textContent = 'Сохранение данных...';
-            
-            setTimeout(() => {
-                document.getElementById('shutdown-sub').textContent = 'Выключение...';
-                setTimeout(() => {
-                    if(tg && typeof tg.close === 'function') tg.close();
-                    else window.close();
-                    setTimeout(() => location.href = 'about:blank', 1000);
-                }, 1500);
-            }, 2000);
-        }
-
-        function sysRestart() {
-            hideMenus();
-            const overlay = document.getElementById('shutdown-overlay');
-            overlay.classList.remove('hidden-screen');
-            document.getElementById('shutdown-title').textContent = 'Перезагрузка';
-            document.getElementById('shutdown-sub').textContent = 'Сохранение настроек...';
-            setTimeout(() => location.reload(), 2000);
-        }
-
-        function refreshDesktop() {
-            loadDesktop();
-            hideMenus();
-        }
-
-        function escapeHtml(text) {
-            if(!text) return '';
-            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        }
-
-    </script>
+<div id="mobile-block"><i class="fas fa-mobile-alt" style="font-size:4em;color:#ff4444;margin-bottom:20px;"></i><h1 style="color:#fff;">Доступ запрещен</h1><p style="color:#888;">QuadroOS доступна только на ПК</p></div>
+<div id="boot-screen"><div class="boot-logo-fallback" id="boot-logo-el">Q</div><div class="spinner"></div></div>
+<div id="welcome-text" class="hidden-screen">
+<div class="welcome-msg" id="msg1">Привет!</div>
+<div class="welcome-msg" id="msg2">Подождите немного...</div>
+<div class="welcome-msg" id="msg3">Это того стоит, поверьте!</div>
+<div class="welcome-msg" id="msg4">Все готово</div>
+</div>
+<div id="download-screen" class="hidden-screen">
+<div class="dl-container">
+<div class="dl-title" id="dl-title">Скачивание ресурсов QuadroOS</div>
+<div class="dl-desc" id="dl-desc">Для корректной работы системы нужно установить ресурсы. Это займет от 2 секунд.</div>
+<button class="dl-btn" id="start-dl-btn">Скачать ресурсы QuadroOS</button>
+<div class="progress-wrap" id="dl-progress-wrap" style="display:none;"><div class="progress-bar" id="dl-bar"></div></div>
+<div class="dl-status" id="dl-status"></div>
+</div>
+</div>
+<div id="privacy-modal">
+<div class="modal-box">
+<div class="modal-header"><h2>Добро пожаловать в QuadroOS</h2></div>
+<div class="modal-body">
+<h3>Политика конфиденциальности и условия использования</h3>
+<p>Настоящая политика описывает, как мы обрабатываем ваши данные и какие риски связаны с использованием программного обеспечения QuadroOS.</p>
+<h3>1. Локальное хранение данных</h3>
+<p>Все пользовательские данные, включая созданные файлы, настройки системы и историю действий, хранятся исключительно локально на вашем устройстве с использованием технологии IndexedDB. Мы не собираем, не передаем и не храним ваши данные на внешних серверах.</p>
+<h3>2. Безопасность устройства</h3>
+<p>QuadroOS является веб-приложением. В случае заражения вашего устройства вредоносным ПО, которое может перехватить данные из локального хранилища браузера, или при переполнении памяти устройства, что приведет к нестабильной работе Telegram или ОС, разработчики не несут ответственности. Мы предоставляем инструмент "как есть".</p>
+<h3>3. Риски утечки данных</h3>
+<p>Хотя мы применяем современные методы защиты, любое программное обеспечение может содержать уязвимости. Вы используете QuadroOS на свой страх и риск. В случае утечки данных по вине стороннего ПО или уязвимостей браузера, ответственность лежит на пользователе.</p>
+<h3>4. Стабильность работы</h3>
+<p>Система находится в стадии активной разработки. Возможны сбои, потеря несохраненных данных при аварийном закрытии вкладки или ошибки отображения. Файлы старше 30 дней удаляются автоматически. Регулярно делайте резервные копии важных файлов.</p>
+</div>
+<div class="modal-footer">
+<div class="checkbox-custom" id="privacy-check"></div>
+<span style="font-size:13px;color:#ccc;cursor:pointer;" id="privacy-label">Я прочитал политику конфиденциальности и принимаю все риски</span>
+</div>
+</div>
+</div>
+<div id="desktop" style="display:none;">
+<video id="desktop-video-bg" autoplay loop muted playsinline></video>
+<div class="icon-grid" id="icon-grid"></div>
+</div>
+<div id="taskbar" style="display:none;">
+<div id="start-btn"><i class="fas fa-bars"></i></div>
+<div class="taskbar-apps" id="taskbar-apps"></div>
+<div class="taskbar-right"><div class="clock-container" id="clock"><div class="time" id="time">00:00</div><div id="date">01.01.2026</div></div></div>
+</div>
+<div id="datetime-popup"><div class="popup-time" id="popup-time">00:00:00</div><div class="popup-date" id="popup-date">01.01.2026</div></div>
+<div id="start-menu">
+<input type="text" class="search-box" id="app-search" placeholder="Поиск программ...">
+<div id="start-menu-list">
+<div class="menu-item" onclick="sysShutdown()"><i class="fas fa-power-off"></i> Завершение работы</div>
+<div class="menu-item" onclick="sysRestart()"><i class="fas fa-redo"></i> Перезагрузка</div>
+<div class="menu-item" data-app="mydevice" onclick="openApp('mydevice')"><i class="fas fa-desktop"></i> Мое устройство</div>
+<div class="menu-item" data-app="explorer" onclick="openApp('explorer')"><i class="fas fa-folder-open"></i> Проводник</div>
+<div class="menu-item" data-app="gallery" onclick="openApp('gallery')"><i class="fas fa-images"></i> Галерея</div>
+<div class="menu-item" data-app="music" onclick="openApp('music')"><i class="fas fa-music"></i> Музыка</div>
+<div class="menu-item" data-app="browser" onclick="openApp('browser')"><i class="fas fa-globe"></i> Браузер</div>
+<div class="menu-item" data-app="stats" onclick="openApp('stats')" style="display:none;"><i class="fas fa-chart-pie"></i> Статистика системы</div>
+<div class="menu-item" data-app="installer" onclick="openApp('installer')" style="display:none;"><i class="fas fa-download"></i> Установщик QuadroOS</div>
+</div>
+</div>
+<div class="ctx-menu" id="ctx-menu">
+<div class="ctx-item" onclick="createFile('txt')"><i class="fas fa-file-alt"></i> Создать TXT</div>
+<div class="ctx-item" onclick="createFile('html')"><i class="fas fa-code"></i> Создать HTML</div>
+<div class="ctx-item" onclick="refreshDesktop()"><i class="fas fa-sync"></i> Обновить</div>
+</div>
+<div class="ctx-menu" id="file-ctx-menu">
+<div class="ctx-item" onclick="renameCurrentFile()"><i class="fas fa-pen"></i> Переименовать</div>
+<div class="ctx-item" onclick="confirmDeleteFile()"><i class="fas fa-trash"></i> Удалить файл</div>
+</div>
+<div class="ctx-menu" id="gallery-ctx-menu">
+<div class="ctx-item" onclick="setAsWallpaper()"><i class="fas fa-image"></i> Установить как обои</div>
+<div class="ctx-item" id="gallery-delete-btn" onclick="confirmDeleteMedia()"><i class="fas fa-trash"></i> Удалить</div>
+</div>
+<div class="ctx-menu" id="explorer-file-ctx-menu">
+<div class="ctx-item" onclick="renameExplorerFile()"><i class="fas fa-pen"></i> Переименовать</div>
+<div class="ctx-item" onclick="confirmDeleteExplorerFile()"><i class="fas fa-trash"></i> Удалить</div>
+</div>
+<div id="delete-confirm"><div class="del-box"><h3 style="margin-bottom:10px;">Удаление файла</h3><p style="color:#aaa;font-size:13px;">Вы уверены? Файл будет удален безвозвратно.</p><div class="del-btns"><button class="btn-ok" onclick="executeDelete()">ОК</button><button class="btn-cancel" onclick="cancelDelete()">Отмена</button></div></div></div>
+<div id="rename-modal"><div class="del-box"><h3 style="margin-bottom:6px;">Переименовать файл</h3><input type="text" id="rename-input" placeholder="Новое имя"><div class="del-btns"><button class="btn-blue" onclick="confirmRename()">ОК</button><button class="btn-cancel" onclick="cancelRename()">Отмена</button></div></div></div>
+<div id="uninstall-confirm"><div class="del-box"><h3 style="margin-bottom:10px;">Полное удаление системы</h3><p style="color:#aaa;font-size:13px;">Вы собираетесь удалить QuadroOS и все ее системные ресурсы включая все ваши данные которые хранятся на устройстве, продолжить?</p><div class="del-btns"><button class="btn-ok" onclick="doUninstall()">Да</button><button class="btn-cancel" onclick="cancelUninstall()">Отменить</button></div></div></div>
+<div id="shutdown-overlay" class="hidden-screen"><div class="shutdown-box"><div class="shutdown-spinner"></div><div class="shutdown-text" id="shutdown-title">Завершение работы</div><div class="shutdown-sub" id="shutdown-sub">Сохранение данных...</div></div></div>
+<div id="toast"></div>
+<script>
+const tg=window.Telegram?.WebApp||{};
+const DB_NAME='QuadroOS_DB';
+const STORE_FILES='files',STORE_ICONS='icons',STORE_SYS='system',STORE_RESOURCES='resources';
+let db=null,windows=[],openingApp=null,lastIconClick=0,activeWindowId=null,fileCounter=0;
+let draggedIcon=null,targetFileForAction=null,targetMediaForAction=null,isDragging=false;
+let dragStartX=0,dragStartY=0,dragOffX=0,dragOffY=0;
+let explorerFileForAction=null;
+let sysIconUrl=null,sysBgUrl=null,sysBg2Url=null,bootAudio=null,statsInterval=null,statsBusy=false;
+let usageSeconds=0,usageInit=false;
+const SYS_MUSIC_ID='sys_music';
+let hiddenSystemTracks=[];
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const $=id=>document.getElementById(id);
+if(tg&&typeof tg.ready==='function'){try{tg.ready();tg.expand();tg.setHeaderColor('#0a0e27');tg.setBackgroundColor('#0a0e27');if(typeof tg.requestFullscreen==='function'&&!tg.isFullscreen)tg.requestFullscreen();}catch(e){}}
+if(/Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent)){$('mobile-block').style.display='flex';}else{initSystem();}
+async function initSystem(){
+ await initDB();
+ hiddenSystemTracks=await getFromDB(STORE_SYS,'hidden_tracks')||[];
+ await cleanupOldFiles();
+ usageSeconds=await getFromDB(STORE_SYS,'total_usage_time')||0;
+ const firstLoad=await getFromDB(STORE_SYS,'FirstLoad');
+ if(!firstLoad){showPrivacyModal();}
+ else{await loadSystemAssets();applySavedSettings();startBootSequence();}
+}
+function initDB(){return new Promise((res,rej)=>{const rq=indexedDB.open(DB_NAME,2);rq.onupgradeneeded=e=>{const d=rq.result;if(!d.objectStoreNames.contains(STORE_FILES))d.createObjectStore(STORE_FILES);if(!d.objectStoreNames.contains(STORE_ICONS))d.createObjectStore(STORE_ICONS);if(!d.objectStoreNames.contains(STORE_SYS))d.createObjectStore(STORE_SYS);if(!d.objectStoreNames.contains(STORE_RESOURCES))d.createObjectStore(STORE_RESOURCES);};rq.onsuccess=e=>{db=e.target.result;res();};rq.onerror=e=>rej(e);});}
+function saveToDB(s,k,v){return new Promise((res,rej)=>{const tx=db.transaction([s],'readwrite');const rq=tx.objectStore(s).put(v,k);rq.onsuccess=()=>res();rq.onerror=()=>rej(rq.error);});}
+function getFromDB(s,k){return new Promise((res,rej)=>{const tx=db.transaction([s],'readonly');const rq=tx.objectStore(s).get(k);rq.onsuccess=()=>res(rq.result);rq.onerror=()=>rej(rq.error);});}
+function delFromDB(s,k){return new Promise(res=>{const tx=db.transaction([s],'readwrite');tx.objectStore(s).delete(k);tx.oncomplete=()=>res();tx.onerror=()=>res();});}
+async function deleteDatabase(){try{db.close();}catch(e){}return new Promise(res=>{const rq=indexedDB.deleteDatabase(DB_NAME);rq.onsuccess=res;rq.onerror=res;rq.onblocked=res;});}
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',3000);}
+async function cleanupOldFiles(){
+ const now=Date.now(),MONTH=30*24*3600*1000;
+ const files=await getFromDB(STORE_FILES,'user_files')||{};let ch=false;
+ for(const k of Object.keys(files)){if(now-(files[k].created||now)>MONTH){delete files[k];ch=true;}}
+ if(ch)await saveToDB(STORE_FILES,'user_files',files);
+ const media=await getFromDB(STORE_FILES,'media_files')||{};let ch2=false;
+ for(const k of Object.keys(media)){if(now-(media[k].created||now)>MONTH){delete media[k];ch2=true;}}
+ if(ch2)await saveToDB(STORE_FILES,'media_files',media);
+}
+async function getUsedBytes(){
+ let t=0;
+ for(const r of['sys_icon','sys_bg','sys_bg2','sys_music']){const b=await getFromDB(STORE_RESOURCES,r);if(b)t+=b.size;}
+ const files=await getFromDB(STORE_FILES,'user_files')||{};Object.values(files).forEach(f=>t+=(f.content||'').length);
+ const media=await getFromDB(STORE_FILES,'media_files')||{};Object.values(media).forEach(m=>t+=(m.blob?m.blob.size:0));
+ return t;
+}
+async function enforceLimit(add){
+ const enabled=await getFromDB(STORE_SYS,'limit_enabled');if(!enabled)return true;
+ const gb=await getFromDB(STORE_SYS,'limit_gb')||5;const limit=gb*1024*1024*1024;
+ let used=await getUsedBytes();
+ if(used+add>limit){
+  if(used>limit*0.8){await cleanupOldFiles();used=await getUsedBytes();}
+  if(used+add>limit){toast('⚠ Хранилище переполнено: файл не сохранен (лимит '+gb+' GB)');return false;}
+ }
+ return true;
+}
+async function applySavedSettings(){const gpu=await getFromDB(STORE_SYS,'gpu_accel');document.body.classList.toggle('gpu-accel',!!gpu);}
+async function loadSystemAssets(){
+ const iconBlob=await getFromDB(STORE_RESOURCES,'sys_icon');
+ const bgBlob=await getFromDB(STORE_RESOURCES,'sys_bg');
+ const bg2Blob=await getFromDB(STORE_RESOURCES,'sys_bg2');
+ const customBg=await getFromDB(STORE_SYS,'custom_wallpaper');
+ if(iconBlob)sysIconUrl=URL.createObjectURL(iconBlob);
+ if(bgBlob)sysBgUrl=URL.createObjectURL(bgBlob);
+ if(bg2Blob)sysBg2Url=URL.createObjectURL(bg2Blob);
+ applySystemAssets(customBg);
+}
+function applySystemAssets(customBgData){
+ if(sysIconUrl){
+  const bl=$('boot-logo-el');
+  if(bl){bl.className='boot-logo-img';bl.innerHTML=`<img src="${sysIconUrl}" style="width:100%;height:100%;border-radius:25px;">`;}
+  const sb=$('start-btn');if(sb)sb.innerHTML=`<img src="${sysIconUrl}">`;
+ }
+ const desktop=$('desktop'),videoBg=$('desktop-video-bg');
+ if(customBgData){
+  if(customBgData.type==='video'){desktop.style.backgroundImage='none';videoBg.src=URL.createObjectURL(customBgData.blob);videoBg.style.display='block';videoBg.play();}
+  else{videoBg.style.display='none';desktop.style.backgroundImage=`url('${URL.createObjectURL(customBgData.blob)}')`;}
+ }else if(sysBg2Url){
+  videoBg.style.display='none';
+  desktop.style.backgroundImage=`url('${sysBg2Url}')`;
+ }else if(sysBgUrl){
+  videoBg.style.display='none';
+  desktop.style.backgroundImage=`url('${sysBgUrl}')`;
+ }
+}
+function showPrivacyModal(){
+ const modal=$('privacy-modal'),check=$('privacy-check'),label=$('privacy-label');
+ check.classList.remove('checked');
+ let checked=false;
+ modal.style.display='flex';
+ const toggle=()=>{checked=!checked;check.classList.toggle('checked',checked);if(checked){setTimeout(()=>{modal.style.display='none';showDownloadScreen();},300);}};
+ check.onclick=toggle;label.onclick=toggle;
+}
+const SYS_RESOURCES=[
+ {id:'sys_icon',url:'https://raw.githubusercontent.com/MrFeastProject/QuadroOS-Telegram-Mini-App-Mini-OS-/refs/heads/main/SystemIcon.png'},
+ {id:'sys_bg2',url:'https://raw.githubusercontent.com/MrFeastProject/QuadroOS-Telegram-Mini-App-Mini-OS-/refs/heads/main/QuadroDefaultBackground2.png'},
+ {id:'sys_bg',url:'https://raw.githubusercontent.com/MrFeastProject/QuadroOS-Telegram-Mini-App-Mini-OS-/refs/heads/main/SystemDefaultBackground.png'},
+ {id:'sys_music',url:'https://raw.githubusercontent.com/MrFeastProject/QuadroOS-Telegram-Mini-App-Mini-OS-/main/QuadroOS%20download%20music.m4a'}
+];
+async function fetchBlob(url){const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);return await r.blob();}
+function showDownloadScreen(){
+ const screen=$('download-screen');screen.classList.remove('hidden-screen');
+ $('dl-title').textContent='Скачивание ресурсов QuadroOS';
+ $('dl-desc').style.display='block';
+ const btn=$('start-dl-btn');btn.style.display='block';
+ $('dl-bar').style.width='0%';
+ $('dl-status').textContent='';$('dl-status').style.color='var(--primary)';
+ $('dl-progress-wrap').style.display='none';
+ btn.onclick=async()=>{
+  btn.style.display='none';$('dl-desc').style.display='none';$('dl-progress-wrap').style.display='block';
+  try{
+   for(let i=0;i<SYS_RESOURCES.length;i++){
+    const res=SYS_RESOURCES[i];
+    $('dl-status').textContent=`Загрузка ${res.id}...`;
+    const blob=await fetchBlob(res.url);
+    await saveToDB(STORE_RESOURCES,res.id,blob);
+    $('dl-bar').style.width=(((i+1)/SYS_RESOURCES.length)*100)+'%';
+   }
+   await saveToDB(STORE_SYS,'FirstLoad',true);
+   await saveToDB(STORE_SYS,'install_date',Date.now());
+   await saveToDB(STORE_SYS,'total_usage_time',0);
+   usageSeconds=0;
+   $('dl-status').textContent='Ресурсы установлены!';$('dl-status').style.color='#00ff88';
+   await loadSystemAssets();
+   setTimeout(()=>{screen.classList.add('hidden-screen');startBootSequence();},1000);
+  }catch(e){console.error(e);$('dl-status').textContent='Ошибка загрузки.';$('dl-status').style.color='#ff4444';btn.style.display='block';$('dl-progress-wrap').style.display='none';}
+ };
+}
+function startBootSequence(){
+ const boot=$('boot-screen');
+ $('desktop').style.display='none';
+ $('taskbar').style.display='none';
+ boot.classList.remove('hidden-screen');
+ setTimeout(()=>{boot.classList.add('hidden-screen');runWelcomeText();},2500);
+}
+async function playBootMusic(){try{const blob=await getFromDB(STORE_RESOURCES,'sys_music');if(blob){bootAudio=new Audio(URL.createObjectURL(blob));bootAudio.loop=true;bootAudio.volume=.5;await bootAudio.play();}}catch(e){}}
+function stopBootMusic(){if(bootAudio){bootAudio.pause();bootAudio=null;}}
+function runWelcomeText(){
+ playBootMusic();
+ const wrap=$('welcome-text');wrap.classList.remove('hidden-screen');
+ const m1=$('msg1'),m2=$('msg2'),m3=$('msg3'),m4=$('msg4');
+ m1.classList.add('show');
+ setTimeout(()=>{m1.classList.remove('show');setTimeout(()=>{m2.classList.add('show');setTimeout(()=>{m2.classList.remove('show');setTimeout(()=>{m3.classList.add('show');setTimeout(()=>{m3.classList.remove('show');setTimeout(()=>{m4.classList.add('show');setTimeout(()=>{m4.classList.remove('show');wrap.classList.add('hidden-screen');stopBootMusic();loadDesktop();},1500);},2500);},1000);},2000);},1000);},2000);},2000);
+}
+const GRID_W=100,GRID_H=120;
+/* === FIX: ограничения сетки и защита от наложения иконок === */
+function gridLimits(){
+ const grid=$('icon-grid');
+ const maxCol=Math.max(0,Math.floor((grid.clientWidth-20)/GRID_W)-1);
+ const maxRow=Math.max(0,Math.floor((grid.clientHeight-20)/GRID_H)-1);
+ return{maxCol,maxRow};
+}
+function getOccupiedCells(exceptId){
+ const occ=new Set();
+ document.querySelectorAll('.desktop-icon').forEach(el=>{
+  if(el.dataset.id===exceptId)return;
+  const gx=(parseInt(el.style.gridColumnStart)||1)-1;
+  const gy=(parseInt(el.style.gridRowStart)||1)-1;
+  occ.add(`${gx},${gy}`);
+ });
+ return occ;
+}
+function findFreeCell(x,y,occ){
+ const{maxCol,maxRow}=gridLimits();
+ x=Math.max(0,Math.min(x,maxCol));
+ y=Math.max(0,Math.min(y,maxRow));
+ if(!occ.has(`${x},${y}`))return{x,y};
+ let best=null,bestD=Infinity;
+ for(let cy=0;cy<=maxRow;cy++){
+  for(let cx=0;cx<=maxCol;cx++){
+   if(occ.has(`${cx},${cy}`))continue;
+   const d=(cx-x)*(cx-x)+(cy-y)*(cy-y);
+   if(d<bestD){bestD=d;best={x:cx,y:cy};}
+  }
+ }
+ return best||{x:0,y:0};
+}
+async function loadDesktop(){
+ $('desktop').style.display='block';
+ $('taskbar').style.display='flex';
+ const grid=$('icon-grid');grid.innerHTML='';
+ applySystemAssets(await getFromDB(STORE_SYS,'custom_wallpaper'));
+ const defaults=[
+  {id:'mydevice',name:'Мое устройство',icon:'fa-desktop',type:'app'},
+  {id:'trash',name:'Корзина',icon:'fa-trash',type:'app'},
+  {id:'settings',name:'Настройки',icon:'fa-cog',type:'app'},
+  {id:'explorer',name:'Проводник',icon:'fa-folder-open',type:'app'},
+  {id:'gallery',name:'Галерея',icon:'fa-images',type:'app'},
+  {id:'music',name:'Музыка',icon:'fa-music',type:'app'},
+  {id:'browser',name:'Браузер',icon:'fa-globe',type:'app'}
+ ];
+ const savedPos=await getFromDB(STORE_ICONS,'positions')||{};
+ defaults.forEach((def,index)=>{const pos=savedPos[def.id]||{x:0,y:index};createIconElement(def.id,def.name,def.icon,'app',pos.x,pos.y);});
+ const files=await getFromDB(STORE_FILES,'user_files')||{};
+ Object.keys(files).forEach((fid,index)=>{const f=files[fid];const pos=savedPos[fid]||{x:0,y:7+index};createIconElement(fid,f.name,f.type==='html'?'fa-code':'fa-file-alt','file',pos.x,pos.y);});
+ const media=await getFromDB(STORE_FILES,'media_files')||{};
+ Object.keys(media).forEach(mid=>{if(savedPos[mid]){const m=media[mid];createIconElement(mid,m.name,iconForItem({name:m.name,type:m.type}),'media',savedPos[mid].x,savedPos[mid].y);}});
+ startClock();initUsage();
+}
+function iconForItem(item){
+ const ext=(item.name||'').split('.').pop().toLowerCase();
+ if(item.type==='txt'||ext==='txt')return'fa-file-alt';
+ if(item.type==='html'||ext==='html')return'fa-code';
+ if(item.type&&item.type.startsWith('image/'))return'fa-image';
+ if(item.type&&item.type.startsWith('audio/'))return'fa-music';
+ if(item.type&&item.type.startsWith('video/'))return'fa-video';
+ if(['exe','apk','msi'].includes(ext))return'fa-cube';
+ if(['zip','rar','7z'].includes(ext))return'fa-file-archive';
+ return'fa-file';
+}
+function createIconElement(id,name,iconClass,type,gx,gy){
+ const el=document.createElement('div');
+ el.className='desktop-icon';el.dataset.id=id;el.dataset.type=type;
+ el.style.gridColumnStart=gx+1;el.style.gridRowStart=gy+1;
+ let iconContent=`<i class="fas ${iconClass}"></i>`;
+ if(id==='mydevice'&&sysIconUrl)iconContent=`<img src="${sysIconUrl}">`;
+ el.innerHTML=`<div class="icon-img">${iconContent}</div><div class="icon-label">${name}</div>`;
+ el.addEventListener('mousedown',startDrag);
+ el.addEventListener('dblclick',()=>{const now=Date.now();if(now-lastIconClick<400)return;lastIconClick=now;openApp(id);});
+ el.addEventListener('contextmenu',e=>{
+  if(type==='file'){e.preventDefault();e.stopPropagation();targetFileForAction=id;showCtxMenu(e.pageX,e.pageY,'file-ctx-menu');}
+  else if(type==='media'){e.preventDefault();e.stopPropagation();targetMediaForAction=id;$('gallery-delete-btn').style.display='flex';showCtxMenu(e.pageX,e.pageY,'gallery-ctx-menu');}
+ });
+ $('icon-grid').appendChild(el);
+}
+function startDrag(e){
+ if(e.button!==0)return;
+ draggedIcon=this;isDragging=false;
+ dragStartX=e.clientX;dragStartY=e.clientY;
+ const rect=this.getBoundingClientRect();
+ dragOffX=e.clientX-rect.left;dragOffY=e.clientY-rect.top;
+ function onMove(ev){
+  if(!draggedIcon)return;
+  const dx=Math.abs(ev.clientX-dragStartX),dy=Math.abs(ev.clientY-dragStartY);
+  if(!isDragging&&(dx>5||dy>5)){isDragging=true;draggedIcon.classList.add('dragging');}
+  if(isDragging){
+   draggedIcon.style.position='absolute';
+   draggedIcon.style.left=(ev.clientX-dragOffX)+'px';
+   draggedIcon.style.top=(ev.clientY-dragOffY)+'px';
+   draggedIcon.style.zIndex=1000;
+  }
+ }
+ function onUp(ev){
+  document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
+  if(draggedIcon){
+   draggedIcon.classList.remove('dragging');
+   if(isDragging){
+    const gridRect=$('icon-grid').getBoundingClientRect();
+    const rawX=Math.round((ev.clientX-gridRect.left-20)/GRID_W);
+    const rawY=Math.round((ev.clientY-gridRect.top-20)/GRID_H);
+    const occ=getOccupiedCells(draggedIcon.dataset.id);
+    const cell=findFreeCell(rawX,rawY,occ);
+    draggedIcon.style.position='';draggedIcon.style.left='';draggedIcon.style.top='';draggedIcon.style.zIndex='';
+    draggedIcon.style.gridColumnStart=cell.x+1;draggedIcon.style.gridRowStart=cell.y+1;
+    saveIconPos(draggedIcon.dataset.id,cell.x,cell.y);
+   }
+   draggedIcon=null;isDragging=false;
+  }
+ }
+ document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
+}
+async function saveIconPos(id,x,y){const pos=await getFromDB(STORE_ICONS,'positions')||{};pos[id]={x,y};await saveToDB(STORE_ICONS,'positions',pos);}
+async function createFile(type){
+ if(!await enforceLimit(1024))return;
+ fileCounter++;
+ const name=`Новый документ ${fileCounter}.${type}`,id='file_'+Date.now();
+ const occ=getOccupiedCells(null);
+ const cell=findFreeCell(0,7,occ);
+ const files=await getFromDB(STORE_FILES,'user_files')||{};
+ files[id]={name,type,content:'',created:Date.now()};
+ await saveToDB(STORE_FILES,'user_files',files);
+ await saveIconPos(id,cell.x,cell.y);
+ createIconElement(id,name,type==='html'?'fa-code':'fa-file-alt','file',cell.x,cell.y);
+ hideMenus();
+}
+let renameTargetId=null;
+function renameCurrentFile(){
+ if(!targetFileForAction)return;
+ renameTargetId=targetFileForAction;
+ const el=document.querySelector(`.desktop-icon[data-id="${renameTargetId}"] .icon-label`);
+ $('rename-input').value=el?el.textContent:'';
+ $('rename-modal').style.display='flex';
+ hideMenus();
+ setTimeout(()=>{$('rename-input').focus();},50);
+}
+async function renameExplorerFile(){
+ if(!explorerFileForAction)return;
+ hideMenus();
+ renameTargetId=explorerFileForAction;
+ let currentName='';
+ const files=await getFromDB(STORE_FILES,'user_files');
+ if(files&&files[renameTargetId])currentName=files[renameTargetId].name;
+ else{const media=await getFromDB(STORE_FILES,'media_files');if(media&&media[renameTargetId])currentName=media[renameTargetId].name;}
+ $('rename-input').value=currentName;
+ $('rename-modal').style.display='flex';
+ setTimeout(()=>{const inp=$('rename-input');inp.focus();const dot=currentName.lastIndexOf('.');if(dot>0)inp.setSelectionRange(0,dot);else inp.select();},50);
+}
+async function confirmRename(){
+ const newName=$('rename-input').value.trim();
+ if(renameTargetId&&newName){
+  let renamed=false;
+  const files=await getFromDB(STORE_FILES,'user_files');
+  if(files&&files[renameTargetId]){files[renameTargetId].name=newName;await saveToDB(STORE_FILES,'user_files',files);renamed=true;}
+  const media=await getFromDB(STORE_FILES,'media_files');
+  if(media&&media[renameTargetId]){media[renameTargetId].name=newName;await saveToDB(STORE_FILES,'media_files',media);renamed=true;}
+  if(renamed){
+   const lbl=document.querySelector(`.desktop-icon[data-id="${renameTargetId}"] .icon-label`);
+   if(lbl)lbl.textContent=newName;
+   if($('explorer-content'))loadExplorerFolder(currentFolder);
+   if($('mp-tbody'))initMusicPlayer();
+   if($('gallery-content'))loadGallery();
+   toast('Файл переименован');
+  }
+ }
+ cancelRename();
+}
+function cancelRename(){$('rename-modal').style.display='none';renameTargetId=null;}
+function confirmDeleteFile(){$('delete-confirm').style.display='flex';hideMenus();}
+function confirmDeleteMedia(){$('delete-confirm').style.display='flex';hideMenus();}
+function confirmDeleteExplorerFile(){hideMenus();if(!explorerFileForAction)return;targetFileForAction=explorerFileForAction;$('delete-confirm').style.display='flex';}
+function cancelDelete(){$('delete-confirm').style.display='none';}
+async function executeDelete(){
+ if(targetFileForAction){
+  const el=document.querySelector(`.desktop-icon[data-id="${targetFileForAction}"]`);if(el)el.remove();
+  const files=await getFromDB(STORE_FILES,'user_files');
+  if(files&&files[targetFileForAction]){delete files[targetFileForAction];await saveToDB(STORE_FILES,'user_files',files);}
+  const media=await getFromDB(STORE_FILES,'media_files');
+  if(media&&media[targetFileForAction]){delete media[targetFileForAction];await saveToDB(STORE_FILES,'media_files',media);}
+  const pos=await getFromDB(STORE_ICONS,'positions');
+  if(pos&&pos[targetFileForAction]){delete pos[targetFileForAction];await saveToDB(STORE_ICONS,'positions',pos);}
+  targetFileForAction=null;
+  if($('explorer-content'))loadExplorerFolder(currentFolder);
+  if($('gallery-content'))loadGallery();
+  if($('mp-tbody'))initMusicPlayer();
+ }else if(targetMediaForAction){
+  const el=document.querySelector(`.desktop-icon[data-id="${targetMediaForAction}"]`);if(el)el.remove();
+  const media=await getFromDB(STORE_FILES,'media_files');
+  if(media&&media[targetMediaForAction]){delete media[targetMediaForAction];await saveToDB(STORE_FILES,'media_files',media);}
+  const pos=await getFromDB(STORE_ICONS,'positions');
+  if(pos&&pos[targetMediaForAction]){delete pos[targetMediaForAction];await saveToDB(STORE_ICONS,'positions',pos);}
+  targetMediaForAction=null;
+  if($('explorer-content'))loadExplorerFolder(currentFolder);
+  if($('gallery-content'))loadGallery();
+  if($('mp-tbody'))initMusicPlayer();
+ }
+ $('delete-confirm').style.display='none';
+}
+async function setAsWallpaper(){
+ if(!targetMediaForAction)return;
+ let file=null;
+ if(targetMediaForAction==='sys_bg'){const blob=await getFromDB(STORE_RESOURCES,'sys_bg');file={type:'image/png',blob};}
+ else if(targetMediaForAction==='sys_bg2'){const blob=await getFromDB(STORE_RESOURCES,'sys_bg2');file={type:'image/png',blob};}
+ else{const mf=await getFromDB(STORE_FILES,'media_files');file=mf[targetMediaForAction];}
+ if(file){const t=file.type.startsWith('video/')?'video':'image';await saveToDB(STORE_SYS,'custom_wallpaper',{type:t,blob:file.blob});applySystemAssets({type:t,blob:file.blob});}
+ hideMenus();
+}
+function clampWin(el){
+ const dw=$('desktop').clientWidth,dh=$('desktop').clientHeight;
+ let x=parseInt(el.style.left)||0,y=parseInt(el.style.top)||0;
+ x=Math.max(-el.offsetWidth+140,Math.min(x,dw-140));
+ y=Math.max(0,Math.min(y,dh-60));
+ el.style.left=x+'px';el.style.top=y+'px';
+}
+function createWindow(id,title,content,icon,useSysIcon){
+ const existing=windows.find(w=>w.id===id);
+ if(existing){focusWindow(id);if(existing.minimized){existing.minimized=false;existing.el.classList.remove('minimized');updateTaskbar();}return existing.el;}
+ const winId='win-'+id;
+ const el=document.createElement('div');
+ el.className='window';el.id=winId;
+ const dw=$('desktop').clientWidth,dh=$('desktop').clientHeight;
+ el.style.width='600px';el.style.height='400px';
+ el.style.left=Math.max(10,(dw-600)/2)+'px';
+ el.style.top=Math.max(10,(dh-400)/2)+'px';
+ let iconHtml=`<i class="fas ${icon}" style="color:var(--primary);font-size:12px;"></i>`;
+ if(useSysIcon&&sysIconUrl)iconHtml=`<img src="${sysIconUrl}">`;
+ el.innerHTML=`
+  <div class="win-header" onmousedown="startWinDrag(event,'${winId}')">
+   ${iconHtml}
+   <div class="win-title">${title}</div>
+   <div class="win-controls">
+    <div class="win-btn" onclick="toggleMinimize('${id}')"><i class="fas fa-minus"></i></div>
+    <div class="win-btn" onclick="toggleMaximize('${id}')"><i class="far fa-square"></i></div>
+    <div class="win-btn close" onclick="closeWindow('${id}')"><i class="fas fa-times"></i></div>
+   </div>
+  </div>
+  <div class="win-content">${content}</div>`;
+ el.addEventListener('mousedown',()=>focusWindow(id));
+ $('desktop').appendChild(el);
+ clampWin(el);
+ windows.push({id,el,minimized:false,maximized:false});
+ focusWindow(id);updateTaskbar();
+ return el;
+}
+function openPreviewWindow(kind,title,innerHTML,icon){
+ const id='preview-'+kind;
+ const existing=windows.find(w=>w.id===id);
+ if(existing){existing.el.querySelector('.win-content').innerHTML=innerHTML;const t=existing.el.querySelector('.win-title');if(t)t.textContent=title;if(existing.minimized)toggleMinimize(id);focusWindow(id);return existing.el;}
+ return createWindow(id,title,innerHTML,icon,false);
+}
+function openApp(id){
+ if(openingApp===id)return;
+ const existing=windows.find(w=>w.id===id);
+ if(existing){focusWindow(id);if(existing.minimized)toggleMinimize(id);return;}
+ openingApp=id;const unlock=()=>{openingApp=null;};
+ let title='Приложение',content='',icon='fa-window-maximize',useSysIcon=false;
+ if(id==='mydevice'){
+  title='Информация';useSysIcon=true;
+  const cpu=navigator.hardwareConcurrency||'Unknown';
+  let gpu='Unknown';
+  try{const c=document.createElement('canvas');const gl=c.getContext('webgl');if(gl){const ext=gl.getExtension('WEBGL_debug_renderer_info');if(ext)gpu=gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);}}catch(e){}
+  gpu=gpu.replace('ANGLE (','').replace(')','');
+  content=`<div class="info-content">
+   <div class="info-row"><div class="info-label">OperationSystem</div><div class="info-value">QuadroOS</div></div>
+   <div class="info-row"><div class="info-label">Version</div><div class="info-value">1.0.2 Beta (Pro Version)</div></div>
+   <div class="info-row"><div class="info-label">CPU</div><div class="info-value">${cpu} Cores</div></div>
+   <div class="info-row"><div class="info-label">GPU</div><div class="info-value">${gpu}</div></div>
+   <div class="info-row"><div class="info-label">Key System</div><div class="info-value">F1FGKW-UTGKS-WRRFD-Q23LFS</div></div></div>`;
+  icon='fa-desktop';
+  createWindow(id,title,content,icon,useSysIcon);
+ }else if(id.startsWith('file_')){
+  getFromDB(STORE_FILES,'user_files').then(files=>{
+   if(files&&files[id]){const f=files[id];createWindow(id,f.name,`<textarea class="text-editor" id="editor-${id}" onblur="saveFileContent('${id}',this.value)">${escapeHtml(f.content)}</textarea>`,f.type==='html'?'fa-code':'fa-file-alt',false);}
+   unlock();
+  }).catch(()=>unlock());
+  return;
+ }else if(id.startsWith('media_')){
+  getFromDB(STORE_FILES,'media_files').then(mf=>{
+   const f=mf&&mf[id];
+   if(f){
+    if(f.type.startsWith('image/'))openPreviewWindow('image',f.name,`<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="${URL.createObjectURL(f.blob)}" style="max-width:100%;max-height:100%;"></div>`,'fa-image');
+    else if(f.type.startsWith('video/'))openPreviewWindow('video',f.name,`<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><video src="${URL.createObjectURL(f.blob)}" controls style="max-width:100%;max-height:100%;"></video></div>`,'fa-video');
+    else if(f.type.startsWith('audio/'))playMediaFile(f);
+    else toast('Нет приложения для открытия этого файла');
+   }
+   unlock();
+  }).catch(()=>unlock());
+  return;
+ }else if(id==='explorer'){
+  title='Проводник (C:)';icon='fa-folder-open';
+  content=`<div class="explorer-layout">
+   <div class="explorer-sidebar">
+    <div class="explorer-nav-item active" onclick="loadExplorerFolder('root',this)"><i class="fas fa-hdd"></i> Диск C:</div>
+    <div class="explorer-nav-item" onclick="loadExplorerFolder('downloads',this)"><i class="fas fa-download"></i> Downloads</div>
+    <div class="explorer-nav-item" onclick="loadExplorerFolder('music',this)"><i class="fas fa-music"></i> Music</div>
+    <div class="explorer-nav-item" onclick="loadExplorerFolder('photos',this)"><i class="fas fa-image"></i> Photos</div>
+    <div class="explorer-nav-item" onclick="loadExplorerFolder('videos',this)"><i class="fas fa-video"></i> Videos</div>
+   </div>
+   <div style="flex:1;display:flex;flex-direction:column;">
+    <div class="upload-btn-area"><input type="file" id="file-upload" style="display:none" onchange="handleFileUpload(this)" multiple><button class="upload-btn" onclick="document.getElementById('file-upload').click()"><i class="fas fa-upload"></i> Загрузить файлы</button></div>
+    <div class="explorer-main" id="explorer-content"></div>
+   </div></div>`;
+  createWindow(id,title,content,icon,false);
+  setTimeout(()=>loadExplorerFolder('root'),100);
+ }else if(id==='gallery'){
+  title='Галерея';icon='fa-images';
+  content=`<div class="gallery-container"><div class="gallery-sidebar"><div class="explorer-nav-item active"><i class="fas fa-images"></i> Все медиа</div></div><div class="gallery-grid" id="gallery-content"></div></div>`;
+  createWindow(id,title,content,icon,false);
+  setTimeout(loadGallery,100);
+ }else if(id==='music'){
+  title='Музыка';icon='fa-music';
+  content=`<div class="music-layout"><div class="music-sidebar">
+   <div class="music-nav active" onclick="switchMusicTab('player',this)"><i class="fas fa-play-circle"></i> Музыка</div>
+   <div class="music-nav" onclick="switchMusicTab('list',this)"><i class="fas fa-list"></i> Список</div></div>
+   <div class="music-main">
+    <div class="music-view active" id="music-player-view"><div class="player-center">
+     <div class="album-art-lg"><i class="fas fa-music"></i></div>
+     <div class="track-info-lg"><div class="track-title-lg" id="mp-title">Нет треков</div><div class="track-artist-lg" id="mp-artist">QuadroOS Audio</div></div>
+     <div class="progress-area"><div class="seek-bar" id="mp-seek" onclick="seekMusic(event)"><div class="seek-fill" id="mp-fill"></div></div><div class="time-labels"><span id="mp-cur">0:00</span><span id="mp-dur">0:00</span></div></div>
+     <div class="controls-lg"><button class="ctrl-btn-lg" onclick="prevTrack()"><i class="fas fa-step-backward"></i></button><button class="ctrl-btn-lg play-btn-lg" id="mp-play-btn" onclick="togglePlay()"><i class="fas fa-play"></i></button><button class="ctrl-btn-lg" onclick="nextTrack()"><i class="fas fa-step-forward"></i></button></div>
+     <button class="delete-track-btn" id="mp-delete-btn" onclick="deleteCurrentTrack()" style="display:none;"><i class="fas fa-trash"></i> Удалить трек</button>
+    </div></div>
+    <div class="music-view" id="music-list-view"><table class="track-list-table"><thead><tr><th>#</th><th>Название</th><th>Автор</th><th>Время</th></tr></thead><tbody id="mp-tbody"></tbody></table></div>
+   </div></div>`;
+  createWindow(id,title,content,icon,false);
+  setTimeout(initMusicPlayer,100);
+ }else if(id==='browser'){
+  title='Браузер';icon='fa-globe';
+  content=`<div class="browser-wrap">
+   <div class="browser-bar">
+    <button class="br-btn" onclick="brBack()" title="Назад"><i class="fas fa-arrow-left"></i></button>
+    <button class="br-btn" onclick="brForward()" title="Вперёд"><i class="fas fa-arrow-right"></i></button>
+    <button class="br-btn" onclick="brReload()" title="Обновить"><i class="fas fa-rotate-right"></i></button>
+    <input class="br-address" id="br-address" placeholder="Поиск в Google или адрес сайта..." onkeydown="if(event.key==='Enter')brGo()">
+    <button class="br-btn" onclick="brGo()" title="Перейти"><i class="fas fa-arrow-right"></i></button>
+    <button class="br-btn" id="brProxyBtn" onclick="toggleBrProxy()" title="Прокси-режим (принудительно)"><i class="fas fa-shield-halved"></i></button>
+    <button class="br-btn" onclick="brExternal()" title="Открыть в новой вкладке (100%)"><i class="fas fa-external-link-alt"></i></button>
+   </div>
+   <div class="br-quick">
+    <span onclick="brOpen('https://www.google.com/webhp?igu=1')">🔍 Google</span>
+    <span onclick="brOpen('https://ru.m.wikipedia.org/wiki/Заглавная_страница')">📚 Wikipedia</span>
+    <span onclick="brOpen('https://www.openstreetmap.org/export/embed.html?bbox=37.58,55.73,37.64,55.76')">🗺️ Карта</span>
+    <span onclick="brOpen('https://example.com')">🌐 Example</span>
+    <span onclick="brOpen('https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ')">📺 YouTube</span>
+   </div>
+   <iframe id="br-frame" class="br-frame" src="https://www.google.com/webhp?igu=1"></iframe>
+   <div class="br-note">💡 Google, Wikipedia и Example работают напрямую. Остальные сайты автоматически открываются через встроенный прокси. Кнопка внешней вкладки — 100% способ для любых сайтов.</div>
+  </div>`;
+  createWindow(id,title,content,icon,false);
+  brHist=['https://www.google.com/webhp?igu=1'];brIdx=0;
+ }else if(id==='stats'){
+  title='Статистика системы и ее ресурсов';icon='fa-chart-pie';
+  content=`<div class="stats-container" id="stats-content">Загрузка...</div>`;
+  createWindow(id,title,content,icon,false);
+  setTimeout(renderStats,100);
+ }else if(id==='settings'){
+  title='Настройки';icon='fa-cog';
+  content=`<div class="settings-wrap">
+   <div class="settings-title">Настройки</div>
+   <div class="set-row"><div class="set-name"><i class="fas fa-microchip"></i> Аппаратное ускорение GPU</div><label class="qos-switch"><input type="checkbox" id="gpu-toggle" onchange="toggleGPU(this.checked)"><span class="qos-track"></span></label></div>
+   <div class="set-row"><div class="set-name"><i class="fas fa-database"></i> Ограничение максимального размера всей системы</div><label class="qos-switch"><input type="checkbox" id="limit-toggle" onchange="toggleLimit(this.checked)"><span class="qos-track"></span></label></div>
+   <div class="limit-scale" id="limit-scale" style="display:none"><div class="limit-stops" id="limit-stops"></div><div class="limit-note">Внимание: все ваши новый файлы при достижении выбранной планки не сохранятся или старые файлы которым более 30 дней могут быть удалены с целью освободить место если оно занято на 80%.</div></div>
+  </div>`;
+  createWindow(id,title,content,icon,false);
+  setTimeout(applySettingsState,50);
+ }else if(id==='installer'){
+  title='Установщик QuadroOS';icon='fa-download';
+  content=`<div class="installer-wrap">
+   <div class="installer-title">Установщик QuadroOS</div>
+   <div class="installer-block"><h4>Переустановка ресурсов QuadroOS</h4><p>Удаляет старые системные ресурсы и заново устанавливает их с сервера QuadroOS. Потребуется перезагрузка системы.</p><button class="inst-btn reinstall" onclick="startReinstall()"><i class="fas fa-rotate"></i> Переустановка ресурсов QuadroOS</button></div>
+   <div class="installer-block"><h4>Полное удаление системы</h4><p>Удаляет QuadroOS, все системные ресурсы и все ваши данные с устройства безвозвратно.</p><button class="inst-btn uninstall" onclick="confirmUninstall()"><i class="fas fa-trash"></i> Uninstall QuadroOS</button></div>
+  </div>`;
+  createWindow(id,title,content,icon,false);
+ }else if(id==='trash'){
+  title='Корзина';content='<div style="padding:20px;text-align:center;color:#666;">Корзина пуста</div>';icon='fa-trash';
+  createWindow(id,title,content,icon,false);
+ }
+ unlock();
+}
+async function saveFileContent(id,content){const files=await getFromDB(STORE_FILES,'user_files');if(files&&files[id]){files[id].content=content;await saveToDB(STORE_FILES,'user_files',files);}}
+async function applySettingsState(){
+ const gpu=await getFromDB(STORE_SYS,'gpu_accel');
+ const lim=await getFromDB(STORE_SYS,'limit_enabled');
+ const gb=await getFromDB(STORE_SYS,'limit_gb')||5;
+ const g=$('gpu-toggle');if(g)g.checked=!!gpu;
+ const l=$('limit-toggle');if(l)l.checked=!!lim;
+ renderLimitScale(!!lim,gb);
+}
+async function toggleGPU(val){await saveToDB(STORE_SYS,'gpu_accel',val);document.body.classList.toggle('gpu-accel',val);toast(val?'Аппаратное ускорение GPU включено':'Аппаратное ускорение GPU выключено');}
+async function toggleLimit(val){await saveToDB(STORE_SYS,'limit_enabled',val);const gb=await getFromDB(STORE_SYS,'limit_gb')||5;renderLimitScale(val,gb);}
+function renderLimitScale(visible,gb){
+ const scale=$('limit-scale');if(!scale)return;
+ scale.style.display=visible?'block':'none';
+ if(!visible)return;
+ const stopsEl=$('limit-stops');stopsEl.innerHTML='';
+ [1,5,10,25,50,100].forEach(v=>{
+  const s=document.createElement('div');
+  s.className='limit-stop'+(v===gb?' active':'');
+  s.innerHTML=`<div class="dot"></div><span>${v}GB</span>`;
+  s.onclick=async()=>{await saveToDB(STORE_SYS,'limit_gb',v);renderLimitScale(true,v);toast('Лимит хранилища: '+v+' GB');};
+  stopsEl.appendChild(s);
+ });
+}
+/* === БРАУЗЕР === */
+let brHist=[],brIdx=0,brProxyMode=false,brProxyBackend=0;
+const BR_PROXY_BACKENDS=[
+ u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
+ u=>'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(u),
+ u=>'https://corsproxy.io/?'+encodeURIComponent(u)
+];
+const BR_DIRECT_DOMAINS=['google.com','wikipedia.org','wikimedia.org','openstreetmap.org','example.com','youtube-nocookie.com','osm.org'];
+function isDirectOk(url){try{const u=new URL(url);const d=u.hostname.replace(/^www\./,'');return BR_DIRECT_DOMAINS.some(b=>d===b||d.endsWith('.'+b));}catch(e){return false;}}
+function brResolve(url){if(brProxyMode||!isDirectOk(url))return BR_PROXY_BACKENDS[brProxyBackend%BR_PROXY_BACKENDS.length](url);return url;}
+function toggleBrProxy(){
+ brProxyMode=!brProxyMode;
+ const b=$('brProxyBtn');if(b)b.classList.toggle('active',brProxyMode);
+ toast(brProxyMode?'Прокси-режим включен для всех сайтов':'Прокси-режим выключен (авто для чужих сайтов)');
+ const cur=brHist[brIdx];
+ if(cur){const f=$('br-frame');if(f)f.src=brResolve(cur);}
+}
+function brOpen(url){
+ const f=$('br-frame');if(!f)return;
+ brHist=brHist.slice(0,brIdx+1);brHist.push(url);brIdx=brHist.length-1;
+ const a=$('br-address');if(a)a.value=url;
+ f.src=brResolve(url);
+}
+function brGo(){
+ const a=$('br-address');if(!a)return;
+ let v=a.value.trim();if(!v)return;
+ if(!/^https?:\/\//i.test(v)){
+  if(v.includes('.')&&!v.includes(' '))v='https://'+v;
+  else v='https://www.google.com/search?igu=1&q='+encodeURIComponent(v);
+ }
+ brOpen(v);
+}
+function brBack(){if(brIdx>0){brIdx--;const u=brHist[brIdx];const f=$('br-frame');if(f)f.src=brResolve(u);const a=$('br-address');if(a)a.value=u;}}
+function brForward(){if(brIdx<brHist.length-1){brIdx++;const u=brHist[brIdx];const f=$('br-frame');if(f)f.src=brResolve(u);const a=$('br-address');if(a)a.value=u;}}
+function brReload(){const f=$('br-frame');if(f)f.src=f.src;}
+function brExternal(){const u=brHist[brIdx]||'https://www.google.com/webhp?igu=1';window.open(u,'_blank');}
+/* === СТАТИСТИКА === */
+function initUsage(){
+ if(usageInit)return;usageInit=true;
+ setInterval(()=>{usageSeconds++;if(usageSeconds%5===0)saveToDB(STORE_SYS,'total_usage_time',usageSeconds).catch(()=>{});},1000);
+}
+async function renderStats(){
+ if(statsBusy)return;statsBusy=true;
+ const container=$('stats-content');
+ if(!container){statsBusy=false;return;}
+ const files=await getFromDB(STORE_FILES,'user_files')||{};
+ const media=await getFromDB(STORE_FILES,'media_files')||{};
+ let sizeFiles=0;Object.values(files).forEach(f=>sizeFiles+=(f.content?f.content.length:0));
+ let sizeAudio=0,sizeVideoPhoto=0;
+ Object.values(media).forEach(m=>{if(m.type&&m.type.startsWith('audio/'))sizeAudio+=(m.blob?m.blob.size:0);else sizeVideoPhoto+=(m.blob?m.blob.size:0);});
+ let sizeSystem=0;
+ for(const r of['sys_icon','sys_bg','sys_bg2','sys_music']){const b=await getFromDB(STORE_RESOURCES,r);if(b)sizeSystem+=b.size;}
+ if(sizeSystem===0)sizeSystem=5*1024*1024;
+ const total=sizeSystem+sizeFiles+sizeAudio+sizeVideoPhoto||1;
+ const pSys=(sizeSystem/total)*100,pFiles=(sizeFiles/total)*100,pAudio=(sizeAudio/total)*100,pMedia=(sizeVideoPhoto/total)*100;
+ const totalTime=usageSeconds;
+ const installDate=await getFromDB(STORE_SYS,'install_date')||Date.now();
+ const h=Math.floor(totalTime/3600),m=Math.floor((totalTime%3600)/60),s=totalTime%60;
+ container.innerHTML=`
+  <div class="stats-header">Статистика системы и ее ресурсов</div>
+  <div class="stats-section-title">Ресурсы системы и файлы</div>
+  <div class="chart-container"><div class="donut-chart" style="background:conic-gradient(#00d4ff 0% ${pSys}%,#0066ff ${pSys}% ${pSys+pFiles}%,#ff00ff ${pSys+pFiles}% ${pSys+pFiles+pAudio}%,#ffff00 ${pSys+pFiles+pAudio}% 100%)"><div class="donut-hole"><span class="donut-total-label">Всего</span><span class="donut-total-value">${formatBytes(total)}</span></div></div></div>
+  <div class="stats-list">
+   <div class="stat-row"><span class="stat-label" style="color:#00d4ff">Система <span class="stat-pct">${pSys.toFixed(1)}%</span></span><span class="stat-value">${formatBytes(sizeSystem)}</span></div>
+   <div class="stat-row"><span class="stat-label" style="color:#0066ff">Файлы пользователя <span class="stat-pct">${pFiles.toFixed(1)}%</span></span><span class="stat-value">${formatBytes(sizeFiles)}</span></div>
+   <div class="stat-row"><span class="stat-label" style="color:#ff00ff">Аудио пользователя <span class="stat-pct">${pAudio.toFixed(1)}%</span></span><span class="stat-value">${formatBytes(sizeAudio)}</span></div>
+   <div class="stat-row"><span class="stat-label" style="color:#ffff00">Видео и Фото пользователя <span class="stat-pct">${pMedia.toFixed(1)}%</span></span><span class="stat-value">${formatBytes(sizeVideoPhoto)}</span></div>
+  </div>
+  <div class="stats-section-title">Статистика системы</div>
+  <div class="stats-list">
+   <div class="stat-row"><span class="stat-label">Время использования</span><span class="stat-value">${h}ч ${m}м ${s}с</span></div>
+   <div class="stat-row"><span class="stat-label">Дата установки</span><span class="stat-value">${new Date(installDate).toLocaleString()}</span></div>
+  </div>`;
+ statsBusy=false;
+ if(!statsInterval){statsInterval=setInterval(()=>{if(windows.find(w=>w.id==='stats'))renderStats();else{clearInterval(statsInterval);statsInterval=null;}},1000);}
+}
+function formatBytes(b){if(!b||b===0)return'0 B';const k=1024,s=['B','KB','MB','GB'];const i=Math.floor(Math.log(b)/Math.log(k));return parseFloat((b/Math.pow(k,i)).toFixed(2))+' '+s[i];}
+/* === ПРОВОДНИК === */
+let currentFolder='root';
+async function loadExplorerFolder(folder,navEl){
+ currentFolder=folder;
+ if(navEl){const win=navEl.closest('.window');win.querySelectorAll('.explorer-nav-item').forEach(el=>el.classList.remove('active'));navEl.classList.add('active');}
+ const container=$('explorer-content');if(!container)return;
+ container.innerHTML='';
+ const files=await getFromDB(STORE_FILES,'user_files')||{};
+ const mediaFiles=await getFromDB(STORE_FILES,'media_files')||{};
+ let itemsToShow=[];
+ if(folder==='root'){
+  const q=document.createElement('div');q.className='file-item';
+  q.innerHTML=`<i class="fas fa-folder" style="color:var(--primary)"></i><span>QuadroOS</span>`;
+  q.onclick=()=>loadExplorerFolder('quadroos');
+  container.appendChild(q);
+  const d=document.createElement('div');d.className='file-item';
+  d.innerHTML=`<i class="fas fa-folder" style="color:var(--primary)"></i><span>Downloads</span>`;
+  d.onclick=()=>loadExplorerFolder('downloads');
+  container.appendChild(d);
+  return;
+ }
+ if(folder==='quadroos'){
+  const names={sys_icon:'SystemIcon.png',sys_bg2:'QuadroDefaultBackground2.png',sys_bg:'SystemDefaultBackground.png',sys_music:'QuadroOS download music.m4a'};
+  for(const r of SYS_RESOURCES){
+   const blob=await getFromDB(STORE_RESOURCES,r.id);if(!blob)continue;
+   const el=document.createElement('div');el.className='file-item';
+   const isImg=r.id!=='sys_music';
+   el.innerHTML=`<i class="fas ${isImg?'fa-image':'fa-music'}"></i><span>${names[r.id]}</span>`;
+   el.onclick=()=>{
+    if(isImg){const u=URL.createObjectURL(blob);openPreviewWindow('image',names[r.id],`<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="${u}" style="max-width:100%;max-height:100%;"></div>`,'fa-image');}
+    else{openApp('music');setTimeout(()=>{const idx=playlist.findIndex(t=>t.id===SYS_MUSIC_ID);if(idx!==-1)loadTrack(idx);},250);}
+   };
+   container.appendChild(el);
+  }
+  return;
+ }
+ if(folder==='downloads'){
+  Object.keys(files).forEach(k=>itemsToShow.push({...files[k],id:k,category:'doc'}));
+  Object.keys(mediaFiles).forEach(k=>itemsToShow.push({...mediaFiles[k],id:k,category:'media'}));
+ }else if(folder==='music'){Object.keys(mediaFiles).forEach(k=>{if(mediaFiles[k].type&&mediaFiles[k].type.startsWith('audio/'))itemsToShow.push({...mediaFiles[k],id:k,category:'media'});});}
+ else if(folder==='photos'){Object.keys(mediaFiles).forEach(k=>{if(mediaFiles[k].type&&mediaFiles[k].type.startsWith('image/'))itemsToShow.push({...mediaFiles[k],id:k,category:'media'});});}
+ else if(folder==='videos'){Object.keys(mediaFiles).forEach(k=>{if(mediaFiles[k].type&&mediaFiles[k].type.startsWith('video/'))itemsToShow.push({...mediaFiles[k],id:k,category:'media'});});}
+ if(itemsToShow.length===0){container.innerHTML='<div style="grid-column:1/-1;text-align:center;color:#666;padding:20px;">Папка пуста</div>';return;}
+ itemsToShow.forEach(item=>{
+  const el=document.createElement('div');el.className='file-item';
+  el.innerHTML=`<i class="fas ${iconForItem(item)}"></i><span>${item.name}</span>`;
+  el.onclick=()=>{
+   if(item.category==='doc')openApp(item.id);
+   else if(item.type&&item.type.startsWith('image/'))openPreviewWindow('image',item.name,`<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="${URL.createObjectURL(item.blob)}" style="max-width:100%;max-height:100%;"></div>`,'fa-image');
+   else if(item.type&&item.type.startsWith('video/'))openPreviewWindow('video',item.name,`<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><video src="${URL.createObjectURL(item.blob)}" controls style="max-width:100%;max-height:100%;"></video></div>`,'fa-video');
+   else if(item.type&&item.type.startsWith('audio/'))playMediaFile(item);
+   else toast('Нет приложения для открытия .'+(item.name||'').split('.').pop());
+  };
+  el.addEventListener('contextmenu',e=>{
+   e.preventDefault();e.stopPropagation();
+   explorerFileForAction=item.id;
+   showCtxMenu(e.pageX,e.pageY,'explorer-file-ctx-menu');
+  });
+  el.addEventListener('mousedown',ev=>startExplorerDrag(ev,item));
+  container.appendChild(el);
+ });
+}
+function startExplorerDrag(e,item){
+ if(e.button!==0)return;
+ const sx=e.clientX,sy=e.clientY;
+ let ghost=null;
+ const move=ev=>{
+  if(!ghost&&(Math.abs(ev.clientX-sx)>6||Math.abs(ev.clientY-sy)>6)){
+   ghost=document.createElement('div');ghost.className='drag-ghost';
+   ghost.innerHTML=`<i class="fas ${iconForItem(item)}"></i><span>${item.name}</span>`;
+   document.body.appendChild(ghost);
+  }
+  if(ghost){ghost.style.left=(ev.clientX+12)+'px';ghost.style.top=(ev.clientY+12)+'px';}
+ };
+ const up=ev=>{
+  document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);
+  if(ghost){ghost.remove();handleDropOnDesktop(ev,item);}
+ };
+ document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
+}
+async function handleDropOnDesktop(e,item){
+ if(e.target.closest('.window')||!e.target.closest('#desktop'))return;
+ const gridRect=$('icon-grid').getBoundingClientRect();
+ const rawX=Math.round((e.clientX-gridRect.left-20)/GRID_W);
+ const rawY=Math.round((e.clientY-gridRect.top-20)/GRID_H);
+ const occ=getOccupiedCells(null);
+ const cell=findFreeCell(rawX,rawY,occ);
+ await saveIconPos(item.id,cell.x,cell.y);
+ createIconElement(item.id,item.name,iconForItem(item),item.category==='doc'?'file':'media',cell.x,cell.y);
+ toast('Ярлык добавлен на рабочий стол');
+}
+async function handleFileUpload(input){
+ const list=Array.from(input.files);if(!list.length)return;
+ for(const file of list){
+  if(!await enforceLimit(file.size))continue;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+   const blob=new Blob([e.target.result],{type:file.type||'application/octet-stream'});
+   const mediaFiles=await getFromDB(STORE_FILES,'media_files')||{};
+   const id='media_'+Date.now()+Math.random().toString(36).substr(2,9);
+   mediaFiles[id]={name:file.name,type:file.type||'',blob,created:Date.now()};
+   await saveToDB(STORE_FILES,'media_files',mediaFiles);
+   if($('explorer-content'))loadExplorerFolder(currentFolder);
+   if($('gallery-content'))loadGallery();
+   if($('mp-tbody'))initMusicPlayer();
+  };
+  reader.readAsArrayBuffer(file);
+ }
+ input.value='';
+}
+async function loadGallery(){
+ const container=$('gallery-content');if(!container)return;
+ container.innerHTML='';
+ 
+ // === ИСПРАВЛЕНИЕ: Добавляем ОБА системных фона в галерею с бейджем SYSTEM ===
+ let sysCount=0;
+ 
+ // 1. Новые обои (по умолчанию)
+ if(sysBg2Url){
+  sysCount++;
+  const el=document.createElement('div');el.className='gallery-item';
+  el.innerHTML=`<img src="${sysBg2Url}"><div class="system-badge">SYSTEM</div>`;
+  el.onclick=()=>openPreviewWindow('image','System Wallpaper 2 (Default)',`<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="${sysBg2Url}" style="max-width:100%;max-height:100%;object-fit:contain;"></div>`,'fa-image');
+  el.oncontextmenu=e=>{e.preventDefault();e.stopPropagation();targetMediaForAction='sys_bg2';$('gallery-delete-btn').style.display='none';showCtxMenu(e.pageX,e.pageY,'gallery-ctx-menu');};
+  container.appendChild(el);
+ }
+ 
+ // 2. Старые обои
+ if(sysBgUrl){
+  sysCount++;
+  const el=document.createElement('div');el.className='gallery-item';
+  el.innerHTML=`<img src="${sysBgUrl}"><div class="system-badge">SYSTEM</div>`;
+  el.onclick=()=>openPreviewWindow('image','System Wallpaper',`<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="${sysBgUrl}" style="max-width:100%;max-height:100%;object-fit:contain;"></div>`,'fa-image');
+  el.oncontextmenu=e=>{e.preventDefault();e.stopPropagation();targetMediaForAction='sys_bg';$('gallery-delete-btn').style.display='none';showCtxMenu(e.pageX,e.pageY,'gallery-ctx-menu');};
+  container.appendChild(el);
+ }
+
+ // === Пользовательские файлы ===
+ const mediaFiles=await getFromDB(STORE_FILES,'media_files')||{};
+ const keys=Object.keys(mediaFiles);
+ const media=keys.map(k=>mediaFiles[k]).filter(f=>f.type&&(f.type.startsWith('image/')||f.type.startsWith('video/')));
+ 
+ // Проверка на пустоту (если нет ни системных, ни пользовательских)
+ if(media.length===0 && sysCount===0){
+  container.innerHTML='<div style="grid-column:1/-1;text-align:center;color:#666;padding:20px;">Нет медиафайлов.</div>';
+  return;
+ }
+ 
+ media.forEach(img=>{
+  const mediaId=keys.find(k=>mediaFiles[k]===img);
+  const el=document.createElement('div');el.className='gallery-item';
+  const url=URL.createObjectURL(img.blob);
+  if(img.type.startsWith('video/')){
+   el.innerHTML=`<video src="${url}" muted></video><div class="video-badge"><i class="fas fa-play"></i></div>`;
+   el.onclick=()=>openPreviewWindow('video',img.name,`<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><video src="${url}" controls autoplay style="max-width:100%;max-height:100%;"></video></div>`,'fa-video');
+  }else{
+   el.innerHTML=`<img src="${url}">`;
+   el.onclick=()=>openPreviewWindow('image',img.name,`<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="${url}" style="max-width:100%;max-height:100%;object-fit:contain;"></div>`,'fa-image');
+  }
+  el.oncontextmenu=e=>{e.preventDefault();e.stopPropagation();targetMediaForAction=mediaId;$('gallery-delete-btn').style.display='flex';showCtxMenu(e.pageX,e.pageY,'gallery-ctx-menu');};
+  container.appendChild(el);
+ });
+}
+/* === МУЗЫКА === */
+let audioPlayer=new Audio(),playlist=[],currentTrackIndex=-1;
+function switchMusicTab(tab,el){
+ const win=el.closest('.window');
+ win.querySelectorAll('.music-nav').forEach(n=>n.classList.remove('active'));el.classList.add('active');
+ win.querySelectorAll('.music-view').forEach(v=>v.classList.remove('active'));
+ win.querySelector(`#music-${tab}-view`).classList.add('active');
+}
+async function initMusicPlayer(){
+ const mediaFiles=await getFromDB(STORE_FILES,'media_files')||{};
+ let systemTrack=null;
+ if(!hiddenSystemTracks.includes(SYS_MUSIC_ID)){
+  const sysBlob=await getFromDB(STORE_RESOURCES,'sys_music');
+  if(sysBlob)systemTrack={name:'QuadroOS download music.m4a',type:'audio/m4a',blob:sysBlob,id:SYS_MUSIC_ID,artist:'QuadroOS System File'};
+ }
+ playlist=[];if(systemTrack)playlist.push(systemTrack);
+ for(const key of Object.keys(mediaFiles)){const f=mediaFiles[key];if(f.type&&f.type.startsWith('audio/'))playlist.push({...f,id:key,artist:'Unknown Artist'});}
+ const tbody=$('mp-tbody');
+ if(tbody){
+  tbody.innerHTML='';
+  if(playlist.length===0)tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:#666;padding:20px;">Нет музыки</td></tr>';
+  else playlist.forEach((track,idx)=>{const tr=document.createElement('tr');tr.className='track-row';tr.onclick=()=>loadTrack(idx);tr.innerHTML=`<td>${idx+1}</td><td>${track.name}</td><td>${track.artist||'Unknown'}</td><td>--:--</td>`;tbody.appendChild(tr);});
+ }
+ if(currentTrackIndex>=playlist.length)currentTrackIndex=-1;
+ if(playlist.length>0&&currentTrackIndex===-1)loadTrack(0);
+ else if(currentTrackIndex>=0){const t=playlist[currentTrackIndex];$('mp-title').textContent=t.name;$('mp-artist').textContent=t.artist||'QuadroOS Audio';updateDeleteButtonVisibility(t.id);}
+ audioPlayer.ontimeupdate=updateProgress;audioPlayer.onended=nextTrack;
+ audioPlayer.onloadedmetadata=()=>{const d=$('mp-dur');if(d)d.textContent=formatTime(audioPlayer.duration);};
+}
+function updateDeleteButtonVisibility(trackId){const btn=$('mp-delete-btn');if(btn){btn.style.display='block';btn.dataset.trackId=trackId;}}
+async function deleteCurrentTrack(){
+ const btn=$('mp-delete-btn');const trackId=btn.dataset.trackId;
+ if(trackId===SYS_MUSIC_ID){if(!hiddenSystemTracks.includes(SYS_MUSIC_ID)){hiddenSystemTracks.push(SYS_MUSIC_ID);await saveToDB(STORE_SYS,'hidden_tracks',hiddenSystemTracks);}}
+ else{const mf=await getFromDB(STORE_FILES,'media_files');if(mf&&mf[trackId]){delete mf[trackId];await saveToDB(STORE_FILES,'media_files',mf);}}
+ audioPlayer.pause();audioPlayer.src='';
+ $('mp-title').textContent='Нет треков';$('mp-artist').textContent='QuadroOS Audio';
+ btn.style.display='none';currentTrackIndex=-1;initMusicPlayer();
+}
+function formatTime(s){if(isNaN(s))return"0:00";const m=Math.floor(s/60),sec=Math.floor(s%60);return`${m}:${sec<10?'0':''}${sec}`;}
+function loadTrack(index){
+ if(index<0||index>=playlist.length)return;
+ currentTrackIndex=index;const track=playlist[index];
+ audioPlayer.src=URL.createObjectURL(track.blob);
+ const t=$('mp-title'),a=$('mp-artist');
+ if(t)t.textContent=track.name;if(a)a.textContent=track.artist||'QuadroOS Audio';
+ updateDeleteButtonVisibility(track.id);
+ document.querySelectorAll('.track-row').forEach((r,i)=>r.classList.toggle('playing',i===index));
+ audioPlayer.play().then(()=>{const b=$('mp-play-btn');if(b)b.innerHTML='<i class="fas fa-pause"></i>';}).catch(()=>{});
+}
+function togglePlay(){if(!audioPlayer.src)return;if(audioPlayer.paused){audioPlayer.play();$('mp-play-btn').innerHTML='<i class="fas fa-pause"></i>';}else{audioPlayer.pause();$('mp-play-btn').innerHTML='<i class="fas fa-play"></i>';}}
+function nextTrack(){if(!playlist.length)return;let n=currentTrackIndex+1;if(n>=playlist.length)n=0;loadTrack(n);}
+function prevTrack(){if(!playlist.length)return;let p=currentTrackIndex-1;if(p<0)p=playlist.length-1;loadTrack(p);}
+function updateProgress(){const f=$('mp-fill'),c=$('mp-cur');if(f&&audioPlayer.duration){f.style.width=(audioPlayer.currentTime/audioPlayer.duration)*100+'%';if(c)c.textContent=formatTime(audioPlayer.currentTime);}}
+function seekMusic(e){const bar=$('mp-seek');const r=bar.getBoundingClientRect();const p=(e.clientX-r.left)/r.width;if(audioPlayer.duration)audioPlayer.currentTime=p*audioPlayer.duration;}
+function playMediaFile(file){if(file.type&&file.type.startsWith('audio/')){openApp('music');setTimeout(()=>{const idx=playlist.findIndex(t=>t.name===file.name||t.id===file.id);if(idx!==-1)loadTrack(idx);},200);}}
+/* === ОКНА === */
+function focusWindow(id){activeWindowId=id;windows.forEach(w=>w.el.style.zIndex=100);const w=windows.find(x=>x.id===id);if(w)w.el.style.zIndex=200;updateTaskbar();}
+function toggleMinimize(id){const w=windows.find(x=>x.id===id);if(!w)return;w.minimized=!w.minimized;w.el.classList.toggle('minimized',w.minimized);if(!w.minimized)focusWindow(id);updateTaskbar();}
+function toggleMaximize(id){const w=windows.find(x=>x.id===id);if(!w)return;w.maximized=!w.maximized;w.el.classList.toggle('maximized',w.maximized);}
+function closeWindow(id){const idx=windows.findIndex(x=>x.id===id);if(idx>-1){windows[idx].el.remove();windows.splice(idx,1);updateTaskbar();}}
+let dragWin=null,dragOffWX=0,dragOffWY=0;
+function startWinDrag(e,winId){
+ if(e.target.closest('.win-controls'))return;
+ const w=windows.find(x=>x.id===winId.replace('win-',''));
+ if(w&&w.maximized)return;
+ dragWin=$(winId);
+ const rect=dragWin.getBoundingClientRect();
+ dragOffWX=e.clientX-rect.left;dragOffWY=e.clientY-rect.top;
+ function move(ev){if(!dragWin)return;dragWin.style.left=(ev.clientX-dragOffWX)+'px';dragWin.style.top=(ev.clientY-dragOffWY)+'px';}
+ function up(){if(dragWin)clampWin(dragWin);dragWin=null;document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);}
+ document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
+}
+function updateTaskbar(){
+ const container=$('taskbar-apps');container.innerHTML='';
+ windows.forEach(w=>{
+  const item=document.createElement('div');item.className='taskbar-item';
+  if(w.id===activeWindowId&&!w.minimized)item.classList.add('active');
+  else if(w.minimized)item.classList.add('minimized');
+  let icon='fa-window-maximize';
+  if(w.id==='mydevice')icon='fa-desktop';else if(w.id==='trash')icon='fa-trash';else if(w.id==='settings')icon='fa-cog';
+  else if(w.id==='explorer')icon='fa-folder-open';else if(w.id==='gallery')icon='fa-images';else if(w.id==='music')icon='fa-music';
+  else if(w.id==='stats')icon='fa-chart-pie';else if(w.id==='browser')icon='fa-globe';else if(w.id==='installer')icon='fa-download';
+  else if(w.id==='preview-image')icon='fa-image';else if(w.id==='preview-video')icon='fa-video';
+  else if(w.id.startsWith('file_'))icon=w.id.includes('html')?'fa-code':'fa-file-alt';
+  item.innerHTML=`<i class="fas ${icon}"></i>`;
+  item.onclick=()=>{if(w.id===activeWindowId&&!w.minimized)toggleMinimize(w.id);else{if(w.minimized)toggleMinimize(w.id);focusWindow(w.id);}};
+  container.appendChild(item);
+ });
+}
+/* === МЕНЮ === */
+$('desktop').addEventListener('contextmenu',e=>{if(e.target.closest('.desktop-icon'))return;e.preventDefault();showCtxMenu(e.pageX,e.pageY,'ctx-menu');});
+function showCtxMenu(x,y,menuId){hideMenus();const menu=$(menuId);menu.style.display='block';menu.style.left=x+'px';menu.style.top=y+'px';}
+function hideMenus(){['ctx-menu','file-ctx-menu','gallery-ctx-menu','explorer-file-ctx-menu','start-menu','datetime-popup'].forEach(i=>$(i).style.display='none');}
+document.addEventListener('click',e=>{
+ if(!e.target.closest('.ctx-menu')){$('ctx-menu').style.display='none';$('file-ctx-menu').style.display='none';$('gallery-ctx-menu').style.display='none';$('explorer-file-ctx-menu').style.display='none';}
+ if(!e.target.closest('#start-menu')&&!e.target.closest('#start-btn'))$('start-menu').style.display='none';
+ if(!e.target.closest('#datetime-popup')&&!e.target.closest('#clock'))$('datetime-popup').style.display='none';
+});
+$('start-btn').onclick=e=>{e.stopPropagation();const m=$('start-menu');const v=m.style.display==='block';hideMenus();if(!v)m.style.display='block';};
+$('app-search').addEventListener('input',e=>{
+ const term=e.target.value.toLowerCase();
+ document.querySelectorAll('#start-menu-list .menu-item').forEach(item=>{
+  const text=item.textContent.toLowerCase();const app=item.dataset.app;
+  if(app==='stats'||app==='installer'){item.style.display=(text.includes(term)&&term.length>0)?'flex':'none';}
+  else{item.style.display=text.includes(term)?'flex':'none';}
+ });
+});
+$('clock').onclick=e=>{e.stopPropagation();const p=$('datetime-popup');const v=p.style.display==='block';hideMenus();if(!v){updateDateTimePopup();p.style.display='block';}};
+function startClock(){const u=()=>{const n=new Date();$('time').textContent=n.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});$('date').textContent=n.toLocaleDateString('ru-RU');updateDateTimePopup();};u();setInterval(u,1000);}
+function updateDateTimePopup(){const n=new Date();$('popup-time').textContent=n.toLocaleTimeString('ru-RU');$('popup-date').textContent=n.toLocaleDateString('ru-RU',{weekday:'long',year:'numeric',month:'long',day:'numeric'});}
+function showShutdownOverlay(t,s){$('shutdown-title').textContent=t;$('shutdown-sub').textContent=s;$('shutdown-overlay').classList.remove('hidden-screen');}
+function hideShutdownOverlay(){$('shutdown-overlay').classList.add('hidden-screen');}
+function sysShutdown(){hideMenus();stopBootMusic();showShutdownOverlay('Завершение работы','Сохранение данных...');setTimeout(()=>{$('shutdown-sub').textContent='Выключение...';setTimeout(()=>{if(tg&&typeof tg.close==='function')tg.close();else window.close();setTimeout(()=>location.href='about:blank',1000);},1500);},2000);}
+function sysRestart(){hideMenus();stopBootMusic();showShutdownOverlay('Перезагрузка','Сохранение настроек...');setTimeout(()=>location.reload(),2000);}
+function refreshDesktop(){loadDesktop();hideMenus();}
+/* === УСТАНОВЩИК === */
+async function startReinstall(){
+ closeWindow('installer');
+ stopBootMusic();
+ try{audioPlayer.pause();}catch(e){}
+ showShutdownOverlay('Перезагрузка','Подготовка к переустановке...');
+ await sleep(2000);hideShutdownOverlay();
+ const screen=$('download-screen');screen.classList.remove('hidden-screen');
+ $('dl-title').textContent='Переустановка ресурсов QuadroOS';
+ $('dl-desc').style.display='none';$('start-dl-btn').style.display='none';
+ $('dl-progress-wrap').style.display='block';
+ $('dl-bar').style.width='0%';
+ $('dl-status').style.color='var(--primary)';
+ try{
+  $('dl-status').textContent='Удаление старых ресурсов';
+  for(let i=0;i<SYS_RESOURCES.length;i++){await delFromDB(STORE_RESOURCES,SYS_RESOURCES[i].id);$('dl-bar').style.width=(((i+1)/SYS_RESOURCES.length)*25)+'%';await sleep(200);}
+  $('dl-status').textContent='Установка новых ресурсов QuadroOS';
+  for(let i=0;i<SYS_RESOURCES.length;i++){const b=await fetchBlob(SYS_RESOURCES[i].url);await saveToDB(STORE_RESOURCES,SYS_RESOURCES[i].id,b);$('dl-bar').style.width=(25+((i+1)/SYS_RESOURCES.length)*50)+'%';}
+  $('dl-status').textContent='Проверка ресурсов QuadroOS';
+  for(let i=0;i<SYS_RESOURCES.length;i++){await getFromDB(STORE_RESOURCES,SYS_RESOURCES[i].id);$('dl-bar').style.width=(75+((i+1)/SYS_RESOURCES.length)*20)+'%';await sleep(150);}
+  $('dl-status').textContent='Завершение';$('dl-bar').style.width='100%';
+  await sleep(600);
+ }catch(e){$('dl-status').textContent='Ошибка: '+e.message;$('dl-status').style.color='#ff4444';await sleep(2000);}
+ screen.classList.add('hidden-screen');
+ sysIconUrl=null;sysBgUrl=null;sysBg2Url=null;
+ await loadSystemAssets();
+ showShutdownOverlay('Перезагрузка','Сохранение настроек...');
+ await sleep(2000);hideShutdownOverlay();
+ startBootSequence();
+}
+function confirmUninstall(){$('uninstall-confirm').style.display='flex';}
+function cancelUninstall(){$('uninstall-confirm').style.display='none';}
+async function doUninstall(){
+ $('uninstall-confirm').style.display='none';
+ closeWindow('installer');
+ stopBootMusic();
+ try{audioPlayer.pause();}catch(e){}
+ showShutdownOverlay('Перезагрузка','Подготовка к удалению...');
+ await sleep(2000);hideShutdownOverlay();
+ const screen=$('download-screen');screen.classList.remove('hidden-screen');
+ $('dl-title').textContent='Удаление QuadroOS';
+ $('dl-desc').style.display='none';$('start-dl-btn').style.display='none';
+ $('dl-progress-wrap').style.display='block';
+ $('dl-bar').style.width='0%';
+ $('dl-status').style.color='var(--primary)';
+ $('dl-status').textContent='Удаление системных файлов';
+ for(let p=0;p<=25;p++){$('dl-bar').style.width=p+'%';await sleep(30);}
+ await delFromDB(STORE_RESOURCES,'sys_icon');await delFromDB(STORE_RESOURCES,'sys_bg');await delFromDB(STORE_RESOURCES,'sys_bg2');await delFromDB(STORE_RESOURCES,'sys_music');
+ $('dl-status').textContent='Удаление файлов пользователя';
+ for(let p=25;p<=90;p++){$('dl-bar').style.width=p+'%';await sleep(20);}
+ await delFromDB(STORE_FILES,'user_files');await delFromDB(STORE_FILES,'media_files');await delFromDB(STORE_ICONS,'positions');
+ $('dl-status').textContent='Завершение';
+ for(let p=90;p<=100;p++){$('dl-bar').style.width=p+'%';await sleep(30);}
+ await delFromDB(STORE_SYS,'FirstLoad');await delFromDB(STORE_SYS,'custom_wallpaper');await delFromDB(STORE_SYS,'hidden_tracks');await delFromDB(STORE_SYS,'gpu_accel');await delFromDB(STORE_SYS,'limit_enabled');
+ await sleep(500);
+ await deleteDatabase();
+ screen.classList.add('hidden-screen');
+ sysIconUrl=null;sysBgUrl=null;sysBg2Url=null;windows=[];hiddenSystemTracks=[];usageSeconds=0;
+ $('desktop').style.display='none';
+ $('taskbar').style.display='none';
+ $('icon-grid').innerHTML='';
+ $('taskbar-apps').innerHTML='';
+ $('desktop').style.backgroundImage='';
+ $('desktop-video-bg').style.display='none';
+ $('start-btn').innerHTML='<i class="fas fa-bars"></i>';
+ $('boot-logo-el').className='boot-logo-fallback';$('boot-logo-el').textContent='Q';
+ document.body.classList.remove('gpu-accel');
+ await initDB();
+ showPrivacyModal();
+}
+function escapeHtml(t){if(!t)return'';return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
+</script>
 </body>
 </html>
