@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>QuadroOS</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -11,8 +11,173 @@
 *{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none;}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:#000;color:#fff;overflow:hidden;height:100vh;width:100vw;}
 body.gpu-accel .window,body.gpu-accel .desktop-icon,body.gpu-accel #taskbar,body.gpu-accel .icon-img{transform:translateZ(0);will-change:transform;backface-visibility:hidden;}
+
+/* Эффект отражения (Glassmorphism) */
+body.theme-reflection .window, body.theme-reflection #taskbar, body.theme-reflection #start-menu, body.theme-reflection .modal-box {
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+}
+body.theme-reflection .win-header {
+  position: relative; overflow: hidden;
+}
+body.theme-reflection .win-header::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 50%;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 100%);
+  pointer-events: none;
+}
+
+/* === МОБИЛЬНАЯ БЛОКИРОВКА (только portrait) === */
+#mobile-block{
+ display:none;position:fixed;inset:0;z-index:99999;
+ background:radial-gradient(circle at center,#0d1529 0%,#000 100%);
+ flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:20px;
+}
+#mobile-block i{font-size:4em;color:var(--primary);margin-bottom:20px;animation:rotateHint 2s ease-in-out infinite;}
+#mobile-block h1{color:#fff;font-size:1.5em;margin-bottom:10px;}
+#mobile-block p{color:#888;font-size:0.9em;max-width:300px;line-height:1.5;}
+@keyframes rotateHint{
+ 0%,100%{transform:rotate(0deg);}
+ 25%{transform:rotate(-90deg);}
+ 50%{transform:rotate(-90deg);}
+ 75%{transform:rotate(0deg);}
+}
+
+@media (max-width:768px) and (orientation:portrait){
+ #mobile-block{display:flex!important;}
+ #boot-screen,#welcome-text,#download-screen,#desktop,#taskbar,#privacy-modal{display:none!important;}
+}
+
+/* === АДАПТАЦИЯ ПОД МОБИЛЬНЫЕ (landscape) === */
+@media (max-width:900px) and (orientation:landscape){
+ :root{--taskbar-height:40px;}
+ .icon-grid{grid-template-columns:repeat(auto-fill,80px);grid-auto-rows:95px;padding:10px;}
+ .desktop-icon{width:80px;height:95px;padding:6px;}
+ .icon-img{width:50px;height:50px;font-size:22px;margin-bottom:5px;}
+ .icon-label{font-size:10px;padding:2px 4px;}
+ .window{min-width:280px;min-height:180px;}
+ .win-header{height:28px;padding:0 8px;}
+ .win-title{font-size:11px;margin-left:8px;}
+ .win-btn{width:36px;font-size:9px;}
+ .win-content{font-size:12px;}
+ #taskbar{height:var(--taskbar-height);padding:0 10px;}
+ #start-btn{width:32px;height:32px;margin-right:10px;}
+ #start-btn i{font-size:16px;}
+ .taskbar-item{width:32px;height:32px;}
+ .taskbar-item i{font-size:14px;}
+ .clock-container{padding:3px 8px;font-size:11px;}
+ .time{font-size:11px;}
+ #date{font-size:9px;}
+ #start-menu{bottom:50px;left:10px;width:260px;padding:10px;}
+ .search-box{padding:6px 10px;font-size:12px;margin-bottom:10px;}
+ .menu-item{padding:8px 12px;font-size:12px;}
+ .menu-item i{width:16px;font-size:14px;}
+ .modal-box{max-width:90vw;max-height:85vh;}
+ .modal-header{padding:15px;}
+ .modal-header h2{font-size:18px;}
+ .modal-body{padding:15px;font-size:12px;}
+ .modal-body h3{font-size:14px;}
+ .modal-footer{padding:15px;}
+ .checkbox-custom{width:18px;height:18px;}
+ .dl-container{max-width:90vw;}
+ .dl-title{font-size:18px;}
+ .dl-desc{font-size:12px;margin-bottom:20px;}
+ .dl-btn{padding:10px 24px;font-size:14px;}
+ .progress-wrap{width:280px;}
+ .dl-status{font-size:12px;}
+ .settings-wrap{padding:15px;}
+ .settings-title{font-size:16px;margin-bottom:15px;}
+ .set-row{padding:10px 12px;margin-bottom:10px;}
+ .set-name{font-size:12px;}
+ .set-name i{width:16px;font-size:14px;}
+ .qos-track{width:44px;height:26px;}
+ .qos-track::after{width:22px;height:22px;}
+ .qos-switch input:checked+.qos-track::after{left:20px;}
+ .limit-stop .dot{width:14px;height:14px;}
+ .limit-stop span{font-size:9px;}
+ .limit-note{font-size:10px;}
+ .explorer-sidebar{width:140px;padding:8px;}
+ .explorer-nav-item{padding:6px 10px;font-size:11px;}
+ .explorer-main{padding:10px;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:10px;}
+ .file-item{padding:6px;}
+ .file-item i,.file-item img,.file-item video{font-size:24px;margin-bottom:5px;}
+ .upload-btn{padding:5px 10px;font-size:11px;}
+ .gallery-sidebar{width:100px;padding:8px;}
+ .gallery-grid{padding:10px;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;}
+ .music-sidebar{width:120px;padding:8px;}
+ .music-nav{padding:8px;font-size:11px;}
+ .music-view{padding:15px;}
+ .album-art-lg{width:140px;height:140px;font-size:40px;margin-bottom:20px;}
+ .track-title-lg{font-size:16px;}
+ .track-artist-lg{font-size:12px;}
+ .progress-area{max-width:300px;}
+ .ctrl-btn-lg{font-size:16px;}
+ .play-btn-lg{font-size:32px;}
+ .delete-track-btn{padding:6px 12px;font-size:11px;}
+ .track-list-table th,.track-list-table td{padding:6px;font-size:11px;}
+ .browser-bar{padding:6px;gap:4px;}
+ .br-btn{width:28px;height:28px;font-size:12px;}
+ .br-address{font-size:11px;padding:5px 8px;}
+ .br-quick{padding:4px 6px;gap:6px;}
+ .br-quick span{font-size:10px;padding:2px 6px;}
+ .br-note{font-size:9px;padding:3px 6px;}
+ .stats-container{padding:15px;}
+ .stats-header{font-size:15px;margin-bottom:15px;}
+ .stats-section-title{font-size:12px;}
+ .donut-chart{width:150px;height:150px;}
+ .donut-hole{width:100px;height:100px;}
+ .donut-total-label{font-size:9px;}
+ .donut-total-value{font-size:12px;}
+ .stat-row{padding:8px;}
+ .stat-label{font-size:11px;}
+ .stat-pct{font-size:10px;}
+ .stat-value{font-size:12px;}
+ .info-content{padding:15px;}
+ .info-row{margin-bottom:12px;padding-bottom:8px;}
+ .info-label{font-size:11px;}
+ .info-value{font-size:12px;}
+ .installer-wrap{padding:15px;gap:15px;}
+ .installer-title{font-size:15px;}
+ .installer-block{padding:12px;}
+ .installer-block h4{font-size:12px;}
+ .installer-block p{font-size:11px;}
+ .inst-btn{padding:8px 16px;font-size:12px;}
+ .ctx-menu{min-width:150px;}
+ .ctx-item{padding:6px 10px;font-size:11px;}
+ .ctx-item i{width:14px;font-size:12px;}
+ .del-box{padding:20px;min-width:280px;}
+ .del-box h3{font-size:14px;}
+ .del-box p{font-size:12px;}
+ .del-box input{padding:8px;font-size:12px;}
+ .btn-ok,.btn-blue,.btn-cancel{padding:7px 16px;font-size:12px;}
+ .shutdown-box{padding:30px;min-width:260px;}
+ .shutdown-spinner{width:32px;height:32px;}
+ .shutdown-text{font-size:15px;}
+ .shutdown-sub{font-size:12px;}
+ #toast{padding:8px 14px;font-size:11px;}
+ .boot-logo-img,.boot-logo-fallback{width:90px;height:90px;font-size:3em;}
+ .spinner{width:32px;height:32px;margin-top:30px;}
+ .welcome-msg{font-size:1.8em;}
+ #datetime-popup{bottom:50px;right:10px;padding:15px;min-width:200px;}
+ .popup-time{font-size:1.8em;}
+ .popup-date{font-size:0.9em;}
+}
+
+@media (max-width:600px) and (orientation:landscape){
+ :root{--taskbar-height:36px;}
+ .icon-grid{grid-template-columns:repeat(auto-fill,70px);grid-auto-rows:85px;padding:8px;}
+ .desktop-icon{width:70px;height:85px;padding:5px;}
+ .icon-img{width:44px;height:44px;font-size:20px;}
+ .icon-label{font-size:9px;}
+ .window{min-width:260px;min-height:160px;}
+ #start-menu{width:220px;}
+ .explorer-sidebar{width:110px;}
+ .music-sidebar{width:100px;}
+ .gallery-sidebar{width:80px;}
+ .album-art-lg{width:110px;height:110px;font-size:32px;}
+}
+
 #mobile-block,#boot-screen,#welcome-text,#download-screen,#shutdown-overlay{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;background:radial-gradient(circle at center,#0d1529 0%,#000 100%);}
-#mobile-block{display:none;}
 .hidden-screen{display:none!important;}
 .boot-logo-img{width:120px;height:120px;border-radius:25px;object-fit:contain;box-shadow:0 0 50px rgba(0,212,255,.6);animation:pulse 2s infinite;background:rgba(0,0,0,.2);}
 .boot-logo-fallback{width:120px;height:120px;border-radius:25px;background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;justify-content:center;align-items:center;font-size:4em;font-weight:bold;color:#fff;box-shadow:0 0 50px rgba(0,212,255,.6);animation:pulse 2s infinite;}
@@ -61,6 +226,22 @@ body.gpu-accel .window,body.gpu-accel .desktop-icon,body.gpu-accel #taskbar,body
 .win-btn.close:hover{background:#e81123;color:#fff;}
 .win-content{flex:1;padding:0;overflow:hidden;color:#eee;font-size:14px;position:relative;display:flex;flex-direction:column;min-height:0;}
 .text-editor{width:100%;height:100%;background:#1e1e1e;color:#fff;border:none;outline:none;resize:none;padding:15px;font-family:Consolas,monospace;font-size:14px;line-height:1.5;user-select:text;-webkit-user-select:text;}
+
+/* HTML Editor Styles */
+.html-editor-toolbar{display:flex;gap:8px;padding:8px;background:#252526;border-bottom:1px solid #333;flex-shrink:0;}
+.he-btn{padding:6px 12px;border:1px solid #444;background:#333;color:#ddd;border-radius:4px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:6px;transition:all .2s;}
+.he-btn:hover{background:#444;border-color:#555;}
+.he-btn.run{background:#28a745;border-color:#28a745;color:#fff;}
+.he-btn.run:hover{background:#218838;}
+.he-btn.stop{background:#dc3545;border-color:#dc3545;color:#fff;}
+.he-btn.stop:hover{background:#c82333;}
+.he-btn:disabled{opacity:.5;cursor:not-allowed;}
+.html-editor-body{flex:1;display:flex;position:relative;overflow:hidden;}
+.he-code-area{flex:1;width:100%;height:100%;background:#1e1e1e;color:#d4d4d4;border:none;outline:none;resize:none;padding:15px;font-family:'Consolas','Monaco','Courier New',monospace;font-size:14px;line-height:1.5;tab-size:4;white-space:pre;overflow:auto;}
+.he-preview-frame{flex:1;width:100%;height:100%;border:none;background:#fff;display:none;}
+.html-editor-body.preview-mode .he-code-area{display:none;}
+.html-editor-body.preview-mode .he-preview-frame{display:block;}
+
 .explorer-layout{display:flex;height:100%;background:#1e1e1e;}
 .explorer-sidebar{width:200px;background:#252526;border-right:1px solid #333;padding:10px;display:flex;flex-direction:column;gap:5px;flex-shrink:0;}
 .explorer-nav-item{padding:8px 12px;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:10px;font-size:13px;color:#ccc;transition:background .2s;}
@@ -69,7 +250,7 @@ body.gpu-accel .window,body.gpu-accel .desktop-icon,body.gpu-accel #taskbar,body
 .explorer-main{flex:1;padding:20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:15px;align-content:start;overflow-y:auto;}
 .file-item{display:flex;flex-direction:column;align-items:center;padding:10px;border-radius:4px;cursor:pointer;text-align:center;transition:background .2s;cursor:grab;}
 .file-item:hover{background:rgba(0,212,255,.1);}
-.file-item i{font-size:32px;margin-bottom:8px;color:var(--primary);}
+.file-item i,.file-item img,.file-item video{font-size:32px;margin-bottom:8px;color:var(--primary);}
 .file-item span{font-size:12px;word-break:break-all;color:#ddd;}
 .upload-btn-area{padding:10px;border-bottom:1px solid #333;display:flex;gap:10px;}
 .upload-btn{padding:6px 12px;background:transparent;border:1px solid var(--primary);color:var(--primary);border-radius:4px;cursor:pointer;font-size:12px;transition:all .2s;}
@@ -92,7 +273,8 @@ body.gpu-accel .window,body.gpu-accel .desktop-icon,body.gpu-accel #taskbar,body
 .music-view{flex:1;overflow-y:auto;padding:20px;display:none;}
 .music-view.active{display:block;}
 .player-center{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;}
-.album-art-lg{width:200px;height:200px;border-radius:50%;background:#333;margin-bottom:30px;box-shadow:0 0 40px rgba(0,212,255,.2);display:flex;align-items:center;justify-content:center;font-size:60px;color:#555;border:4px solid #222;}
+.album-art-lg{width:200px;height:200px;border-radius:50%;background:#333;margin-bottom:30px;box-shadow:0 0 40px rgba(0,212,255,.2);display:flex;align-items:center;justify-content:center;font-size:60px;color:#555;border:4px solid #222;overflow:hidden;}
+.album-art-lg img{width:100%;height:100%;object-fit:cover;}
 .track-info-lg{text-align:center;margin-bottom:20px;}
 .track-title-lg{font-size:20px;font-weight:bold;margin-bottom:5px;color:#fff;}
 .track-artist-lg{font-size:14px;color:var(--primary);}
@@ -199,7 +381,7 @@ body.gpu-accel .window,body.gpu-accel .desktop-icon,body.gpu-accel #taskbar,body
 .shutdown-spinner{width:40px;height:40px;border:3px solid #333;border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 20px;}
 .shutdown-text{font-size:18px;margin-bottom:5px;}
 .shutdown-sub{color:#666;font-size:14px;}
-.ctx-menu{position:fixed;background:#2d2d2d;border:1px solid #444;border-radius:6px;padding:5px;display:none;z-index:9000;min-width:150px;box-shadow:0 5px 15px rgba(0,0,0,.5);}
+.ctx-menu{position:fixed;background:#2d2d2d;border:1px solid #444;border-radius:6px;padding:5px;display:none;z-index:9000;min-width:160px;box-shadow:0 5px 15px rgba(0,0,0,.5);}
 .ctx-item{padding:8px 12px;cursor:pointer;font-size:13px;border-radius:4px;display:flex;align-items:center;gap:8px;color:#ddd;}
 .ctx-item:hover{background:var(--primary);color:#000;}
 .ctx-item i{width:16px;text-align:center;}
@@ -215,7 +397,13 @@ body.gpu-accel .window,body.gpu-accel .desktop-icon,body.gpu-accel #taskbar,body
 </style>
 </head>
 <body>
-<div id="mobile-block"><i class="fas fa-mobile-alt" style="font-size:4em;color:#ff4444;margin-bottom:20px;"></i><h1 style="color:#fff;">Доступ запрещен</h1><p style="color:#888;">QuadroOS доступна только на ПК</p></div>
+<!-- МОБИЛЬНАЯ БЛОКИРОВКА (только portrait) -->
+<div id="mobile-block">
+ <i class="fas fa-mobile-alt"></i>
+ <h1>Поверните устройство</h1>
+ <p>QuadroOS оптимизирована для горизонтальной ориентации. Пожалуйста, поверните телефон в ландшафтный режим для продолжения.</p>
+</div>
+
 <div id="boot-screen"><div class="boot-logo-fallback" id="boot-logo-el">Q</div><div class="spinner"></div></div>
 <div id="welcome-text" class="hidden-screen">
 <div class="welcome-msg" id="msg1">Привет!</div>
@@ -241,11 +429,11 @@ body.gpu-accel .window,body.gpu-accel .desktop-icon,body.gpu-accel #taskbar,body
 <h3>1. Локальное хранение данных</h3>
 <p>Все пользовательские данные, включая созданные файлы, настройки системы и историю действий, хранятся исключительно локально на вашем устройстве с использованием технологии IndexedDB. Мы не собираем, не передаем и не храним ваши данные на внешних серверах.</p>
 <h3>2. Безопасность устройства</h3>
-<p>QuadroOS является веб-приложением. В случае заражения вашего устройства вредоносным ПО, которое может перехватить данные из локального хранилища браузера, или при переполнении памяти устройства, что приведет к нестабильной работе Telegram или ОС, разработчики не несут ответственности. Мы предоставляем инструмент "как есть".</p>
+<p>QuadroOS является веб-системой. В случае заражения вашего устройства вредоносным ПО, которое может перехватить данные из локального хранилища браузера, или при переполнении памяти устройства, что приведет к нестабильной работе Telegram или ОС, разработчики не несут ответственности. Мы предоставляем инструмент "как есть".</p>
 <h3>3. Риски утечки данных</h3>
 <p>Хотя мы применяем современные методы защиты, любое программное обеспечение может содержать уязвимости. Вы используете QuadroOS на свой страх и риск. В случае утечки данных по вине стороннего ПО или уязвимостей браузера, ответственность лежит на пользователе.</p>
 <h3>4. Стабильность работы</h3>
-<p>Система находится в стадии активной разработки. Возможны сбои, потеря несохраненных данных при аварийном закрытии вкладки или ошибки отображения. Файлы старше 30 дней удаляются автоматически. Регулярно делайте резервные копии важных файлов.</p>
+<p>Система находится в стадии активной разработки. Возможны сбои, потеря несохраненных данных при аварийном закрытии вкладки или ошибки отображения. Файлы старше 30 дней удаляются автоматически если включено ограничение по хранилищу памяти и оно занято на 80% или более. Регулярно делайте резервные копии важных файлов.</p>
 </div>
 <div class="modal-footer">
 <div class="checkbox-custom" id="privacy-check"></div>
@@ -266,33 +454,39 @@ body.gpu-accel .window,body.gpu-accel .desktop-icon,body.gpu-accel #taskbar,body
 <div id="start-menu">
 <input type="text" class="search-box" id="app-search" placeholder="Поиск программ...">
 <div id="start-menu-list">
-<div class="menu-item" onclick="sysShutdown()"><i class="fas fa-power-off"></i> Завершение работы</div>
-<div class="menu-item" onclick="sysRestart()"><i class="fas fa-redo"></i> Перезагрузка</div>
+<div class="menu-item" onclick="sysShutdown()"><i class="fas fa-power-off"></i> Завершение работы...</div>
+<div class="menu-item" onclick="sysRestart()"><i class="fas fa-redo"></i> Перезагрузка...</div>
 <div class="menu-item" data-app="mydevice" onclick="openApp('mydevice')"><i class="fas fa-desktop"></i> Мое устройство</div>
 <div class="menu-item" data-app="explorer" onclick="openApp('explorer')"><i class="fas fa-folder-open"></i> Проводник</div>
 <div class="menu-item" data-app="gallery" onclick="openApp('gallery')"><i class="fas fa-images"></i> Галерея</div>
 <div class="menu-item" data-app="music" onclick="openApp('music')"><i class="fas fa-music"></i> Музыка</div>
 <div class="menu-item" data-app="browser" onclick="openApp('browser')"><i class="fas fa-globe"></i> Браузер</div>
+<div class="menu-item" data-app="htmleditor" onclick="openApp('htmleditor')"><i class="fas fa-code"></i> HTML Editor</div>
 <div class="menu-item" data-app="stats" onclick="openApp('stats')" style="display:none;"><i class="fas fa-chart-pie"></i> Статистика системы</div>
 <div class="menu-item" data-app="installer" onclick="openApp('installer')" style="display:none;"><i class="fas fa-download"></i> Установщик QuadroOS</div>
+<div class="menu-item" data-app="personalization" onclick="openApp('personalization')" style="display:none;"><i class="fas fa-palette"></i> Персонализация системы</div>
 </div>
 </div>
 <div class="ctx-menu" id="ctx-menu">
 <div class="ctx-item" onclick="createFile('txt')"><i class="fas fa-file-alt"></i> Создать TXT</div>
 <div class="ctx-item" onclick="createFile('html')"><i class="fas fa-code"></i> Создать HTML</div>
+<div class="ctx-item" onclick="downloadToDeviceCurrent()"><i class="fas fa-download"></i> Скачать на устройство</div>
 <div class="ctx-item" onclick="refreshDesktop()"><i class="fas fa-sync"></i> Обновить</div>
 </div>
 <div class="ctx-menu" id="file-ctx-menu">
 <div class="ctx-item" onclick="renameCurrentFile()"><i class="fas fa-pen"></i> Переименовать</div>
 <div class="ctx-item" onclick="confirmDeleteFile()"><i class="fas fa-trash"></i> Удалить файл</div>
+<div class="ctx-item" onclick="downloadToDeviceCurrent()"><i class="fas fa-download"></i> Скачать на устройство</div>
 </div>
 <div class="ctx-menu" id="gallery-ctx-menu">
 <div class="ctx-item" onclick="setAsWallpaper()"><i class="fas fa-image"></i> Установить как обои</div>
+<div class="ctx-item" onclick="downloadToDeviceCurrent()"><i class="fas fa-download"></i> Скачать на устройство</div>
 <div class="ctx-item" id="gallery-delete-btn" onclick="confirmDeleteMedia()"><i class="fas fa-trash"></i> Удалить</div>
 </div>
 <div class="ctx-menu" id="explorer-file-ctx-menu">
 <div class="ctx-item" onclick="renameExplorerFile()"><i class="fas fa-pen"></i> Переименовать</div>
 <div class="ctx-item" onclick="confirmDeleteExplorerFile()"><i class="fas fa-trash"></i> Удалить</div>
+<div class="ctx-item" onclick="downloadToDeviceCurrent()"><i class="fas fa-download"></i> Скачать на устройство</div>
 </div>
 <div id="delete-confirm"><div class="del-box"><h3 style="margin-bottom:10px;">Удаление файла</h3><p style="color:#aaa;font-size:13px;">Вы уверены? Файл будет удален безвозвратно.</p><div class="del-btns"><button class="btn-ok" onclick="executeDelete()">ОК</button><button class="btn-cancel" onclick="cancelDelete()">Отмена</button></div></div></div>
 <div id="rename-modal"><div class="del-box"><h3 style="margin-bottom:6px;">Переименовать файл</h3><input type="text" id="rename-input" placeholder="Новое имя"><div class="del-btns"><button class="btn-blue" onclick="confirmRename()">ОК</button><button class="btn-cancel" onclick="cancelRename()">Отмена</button></div></div></div>
@@ -300,7 +494,7 @@ body.gpu-accel .window,body.gpu-accel .desktop-icon,body.gpu-accel #taskbar,body
 <div id="shutdown-overlay" class="hidden-screen"><div class="shutdown-box"><div class="shutdown-spinner"></div><div class="shutdown-text" id="shutdown-title">Завершение работы</div><div class="shutdown-sub" id="shutdown-sub">Сохранение данных...</div></div></div>
 <div id="toast"></div>
 <script>
-const tg=window.Telegram?.WebApp||{};
+const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : {};
 const DB_NAME='QuadroOS_DB';
 const STORE_FILES='files',STORE_ICONS='icons',STORE_SYS='system',STORE_RESOURCES='resources';
 let db=null,windows=[],openingApp=null,lastIconClick=0,activeWindowId=null,fileCounter=0;
@@ -313,8 +507,29 @@ const SYS_MUSIC_ID='sys_music';
 let hiddenSystemTracks=[];
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const $=id=>document.getElementById(id);
-if(tg&&typeof tg.ready==='function'){try{tg.ready();tg.expand();tg.setHeaderColor('#0a0e27');tg.setBackgroundColor('#0a0e27');if(typeof tg.requestFullscreen==='function'&&!tg.isFullscreen)tg.requestFullscreen();}catch(e){}}
-if(/Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent)){$('mobile-block').style.display='flex';}else{initSystem();}
+
+if(tg && typeof tg.ready==='function'){
+ try{ tg.ready(); tg.expand(); tg.setHeaderColor('#0a0e27'); tg.setBackgroundColor('#0a0e27'); }catch(e){}
+ try{ if(typeof tg.requestFullscreen === 'function' && !tg.isFullscreen) tg.requestFullscreen(); }catch(e){}
+}
+
+function checkMobileOrientation(){
+ const isMobile=/Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
+ const isPortrait=window.matchMedia('(orientation:portrait)').matches;
+ const mobileBlock=$('mobile-block');
+ if(isMobile&&isPortrait){
+  mobileBlock.style.display='flex';
+  document.body.style.overflow='hidden';
+ }else{
+  mobileBlock.style.display='none';
+  document.body.style.overflow='';
+ }
+}
+
+window.addEventListener('orientationchange',()=>{ setTimeout(checkMobileOrientation,100); });
+window.addEventListener('resize',()=>{ setTimeout(checkMobileOrientation,100); });
+checkMobileOrientation();
+
 async function initSystem(){
  await initDB();
  hiddenSystemTracks=await getFromDB(STORE_SYS,'hidden_tracks')||[];
@@ -322,8 +537,15 @@ async function initSystem(){
  usageSeconds=await getFromDB(STORE_SYS,'total_usage_time')||0;
  const firstLoad=await getFromDB(STORE_SYS,'FirstLoad');
  if(!firstLoad){showPrivacyModal();}
- else{await loadSystemAssets();applySavedSettings();startBootSequence();}
+ else{await loadSystemAssets();applySavedSettings();applyThemeToDOM(await getFromDB(STORE_SYS,'theme_color')||'#00d4ff',await getFromDB(STORE_SYS,'theme_opacity')||0.85,await getFromDB(STORE_SYS,'theme_reflection')||false);startBootSequence();}
 }
+
+if(/Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent)&&window.matchMedia('(orientation:portrait)').matches){
+ // Blocked
+}else{
+ initSystem();
+}
+
 function initDB(){return new Promise((res,rej)=>{const rq=indexedDB.open(DB_NAME,2);rq.onupgradeneeded=e=>{const d=rq.result;if(!d.objectStoreNames.contains(STORE_FILES))d.createObjectStore(STORE_FILES);if(!d.objectStoreNames.contains(STORE_ICONS))d.createObjectStore(STORE_ICONS);if(!d.objectStoreNames.contains(STORE_SYS))d.createObjectStore(STORE_SYS);if(!d.objectStoreNames.contains(STORE_RESOURCES))d.createObjectStore(STORE_RESOURCES);};rq.onsuccess=e=>{db=e.target.result;res();};rq.onerror=e=>rej(e);});}
 function saveToDB(s,k,v){return new Promise((res,rej)=>{const tx=db.transaction([s],'readwrite');const rq=tx.objectStore(s).put(v,k);rq.onsuccess=()=>res();rq.onerror=()=>rej(rq.error);});}
 function getFromDB(s,k){return new Promise((res,rej)=>{const tx=db.transaction([s],'readonly');const rq=tx.objectStore(s).get(k);rq.onsuccess=()=>res(rq.result);rq.onerror=()=>rej(rq.error);});}
@@ -370,19 +592,19 @@ async function loadSystemAssets(){
 function applySystemAssets(customBgData){
  if(sysIconUrl){
   const bl=$('boot-logo-el');
-  if(bl){bl.className='boot-logo-img';bl.innerHTML=`<img src="${sysIconUrl}" style="width:100%;height:100%;border-radius:25px;">`;}
-  const sb=$('start-btn');if(sb)sb.innerHTML=`<img src="${sysIconUrl}">`;
+  if(bl){bl.className='boot-logo-img';bl.innerHTML='<img src="'+sysIconUrl+'" style="width:100%;height:100%;border-radius:25px;">';}
+  const sb=$('start-btn');if(sb)sb.innerHTML='<img src="'+sysIconUrl+'">';
  }
  const desktop=$('desktop'),videoBg=$('desktop-video-bg');
  if(customBgData){
   if(customBgData.type==='video'){desktop.style.backgroundImage='none';videoBg.src=URL.createObjectURL(customBgData.blob);videoBg.style.display='block';videoBg.play();}
-  else{videoBg.style.display='none';desktop.style.backgroundImage=`url('${URL.createObjectURL(customBgData.blob)}')`;}
+  else{videoBg.style.display='none';desktop.style.backgroundImage="url('"+URL.createObjectURL(customBgData.blob)+"')";}
  }else if(sysBg2Url){
   videoBg.style.display='none';
-  desktop.style.backgroundImage=`url('${sysBg2Url}')`;
+  desktop.style.backgroundImage="url('"+sysBg2Url+"')";
  }else if(sysBgUrl){
   videoBg.style.display='none';
-  desktop.style.backgroundImage=`url('${sysBgUrl}')`;
+  desktop.style.backgroundImage="url('"+sysBgUrl+"')";
  }
 }
 function showPrivacyModal(){
@@ -413,7 +635,7 @@ function showDownloadScreen(){
   try{
    for(let i=0;i<SYS_RESOURCES.length;i++){
     const res=SYS_RESOURCES[i];
-    $('dl-status').textContent=`Загрузка ${res.id}...`;
+    $('dl-status').textContent='Загрузка '+res.id+'...';
     const blob=await fetchBlob(res.url);
     await saveToDB(STORE_RESOURCES,res.id,blob);
     $('dl-bar').style.width=(((i+1)/SYS_RESOURCES.length)*100)+'%';
@@ -445,7 +667,6 @@ function runWelcomeText(){
  setTimeout(()=>{m1.classList.remove('show');setTimeout(()=>{m2.classList.add('show');setTimeout(()=>{m2.classList.remove('show');setTimeout(()=>{m3.classList.add('show');setTimeout(()=>{m3.classList.remove('show');setTimeout(()=>{m4.classList.add('show');setTimeout(()=>{m4.classList.remove('show');wrap.classList.add('hidden-screen');stopBootMusic();loadDesktop();},1500);},2500);},1000);},2000);},1000);},2000);},2000);
 }
 const GRID_W=100,GRID_H=120;
-/* === FIX: ограничения сетки и защита от наложения иконок === */
 function gridLimits(){
  const grid=$('icon-grid');
  const maxCol=Math.max(0,Math.floor((grid.clientWidth-20)/GRID_W)-1);
@@ -458,19 +679,19 @@ function getOccupiedCells(exceptId){
   if(el.dataset.id===exceptId)return;
   const gx=(parseInt(el.style.gridColumnStart)||1)-1;
   const gy=(parseInt(el.style.gridRowStart)||1)-1;
-  occ.add(`${gx},${gy}`);
+  occ.add(gx+','+gy);
  });
  return occ;
 }
 function findFreeCell(x,y,occ){
- const{maxCol,maxRow}=gridLimits();
- x=Math.max(0,Math.min(x,maxCol));
- y=Math.max(0,Math.min(y,maxRow));
- if(!occ.has(`${x},${y}`))return{x,y};
+ const limits=gridLimits();
+ x=Math.max(0,Math.min(x,limits.maxCol));
+ y=Math.max(0,Math.min(y,limits.maxRow));
+ if(!occ.has(x+','+y))return{x:x,y:y};
  let best=null,bestD=Infinity;
- for(let cy=0;cy<=maxRow;cy++){
-  for(let cx=0;cx<=maxCol;cx++){
-   if(occ.has(`${cx},${cy}`))continue;
+ for(let cy=0;cy<=limits.maxRow;cy++){
+  for(let cx=0;cx<=limits.maxCol;cx++){
+   if(occ.has(cx+','+cy))continue;
    const d=(cx-x)*(cx-x)+(cy-y)*(cy-y);
    if(d<bestD){bestD=d;best={x:cx,y:cy};}
   }
@@ -489,7 +710,8 @@ async function loadDesktop(){
   {id:'explorer',name:'Проводник',icon:'fa-folder-open',type:'app'},
   {id:'gallery',name:'Галерея',icon:'fa-images',type:'app'},
   {id:'music',name:'Музыка',icon:'fa-music',type:'app'},
-  {id:'browser',name:'Браузер',icon:'fa-globe',type:'app'}
+  {id:'browser',name:'Браузер',icon:'fa-globe',type:'app'},
+  {id:'htmleditor',name:'HTML Editor',icon:'fa-code',type:'app'}
  ];
  const savedPos=await getFromDB(STORE_ICONS,'positions')||{};
  defaults.forEach((def,index)=>{const pos=savedPos[def.id]||{x:0,y:index};createIconElement(def.id,def.name,def.icon,'app',pos.x,pos.y);});
@@ -514,9 +736,9 @@ function createIconElement(id,name,iconClass,type,gx,gy){
  const el=document.createElement('div');
  el.className='desktop-icon';el.dataset.id=id;el.dataset.type=type;
  el.style.gridColumnStart=gx+1;el.style.gridRowStart=gy+1;
- let iconContent=`<i class="fas ${iconClass}"></i>`;
- if(id==='mydevice'&&sysIconUrl)iconContent=`<img src="${sysIconUrl}">`;
- el.innerHTML=`<div class="icon-img">${iconContent}</div><div class="icon-label">${name}</div>`;
+ let iconContent='<i class="fas '+iconClass+'"></i>';
+ if(id==='mydevice'&&sysIconUrl)iconContent='<img src="'+sysIconUrl+'">';
+ el.innerHTML='<div class="icon-img">'+iconContent+'</div><div class="icon-label">'+name+'</div>';
  el.addEventListener('mousedown',startDrag);
  el.addEventListener('dblclick',()=>{const now=Date.now();if(now-lastIconClick<400)return;lastIconClick=now;openApp(id);});
  el.addEventListener('contextmenu',e=>{
@@ -561,15 +783,15 @@ function startDrag(e){
  }
  document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
 }
-async function saveIconPos(id,x,y){const pos=await getFromDB(STORE_ICONS,'positions')||{};pos[id]={x,y};await saveToDB(STORE_ICONS,'positions',pos);}
+async function saveIconPos(id,x,y){const pos=await getFromDB(STORE_ICONS,'positions')||{};pos[id]={x:x,y:y};await saveToDB(STORE_ICONS,'positions',pos);}
 async function createFile(type){
  if(!await enforceLimit(1024))return;
  fileCounter++;
- const name=`Новый документ ${fileCounter}.${type}`,id='file_'+Date.now();
+ const name='Новый документ '+fileCounter+'.'+type,id='file_'+Date.now();
  const occ=getOccupiedCells(null);
  const cell=findFreeCell(0,7,occ);
  const files=await getFromDB(STORE_FILES,'user_files')||{};
- files[id]={name,type,content:'',created:Date.now()};
+ files[id]={name:name,type:type,content:'',created:Date.now()};
  await saveToDB(STORE_FILES,'user_files',files);
  await saveIconPos(id,cell.x,cell.y);
  createIconElement(id,name,type==='html'?'fa-code':'fa-file-alt','file',cell.x,cell.y);
@@ -579,11 +801,11 @@ let renameTargetId=null;
 function renameCurrentFile(){
  if(!targetFileForAction)return;
  renameTargetId=targetFileForAction;
- const el=document.querySelector(`.desktop-icon[data-id="${renameTargetId}"] .icon-label`);
+ const el=document.querySelector('.desktop-icon[data-id="'+renameTargetId+'"] .icon-label');
  $('rename-input').value=el?el.textContent:'';
  $('rename-modal').style.display='flex';
  hideMenus();
- setTimeout(()=>{$('rename-input').focus();},50);
+ setTimeout(()=>$('rename-input').focus(),50);
 }
 async function renameExplorerFile(){
  if(!explorerFileForAction)return;
@@ -606,7 +828,7 @@ async function confirmRename(){
   const media=await getFromDB(STORE_FILES,'media_files');
   if(media&&media[renameTargetId]){media[renameTargetId].name=newName;await saveToDB(STORE_FILES,'media_files',media);renamed=true;}
   if(renamed){
-   const lbl=document.querySelector(`.desktop-icon[data-id="${renameTargetId}"] .icon-label`);
+   const lbl=document.querySelector('.desktop-icon[data-id="'+renameTargetId+'"] .icon-label');
    if(lbl)lbl.textContent=newName;
    if($('explorer-content'))loadExplorerFolder(currentFolder);
    if($('mp-tbody'))initMusicPlayer();
@@ -623,7 +845,7 @@ function confirmDeleteExplorerFile(){hideMenus();if(!explorerFileForAction)retur
 function cancelDelete(){$('delete-confirm').style.display='none';}
 async function executeDelete(){
  if(targetFileForAction){
-  const el=document.querySelector(`.desktop-icon[data-id="${targetFileForAction}"]`);if(el)el.remove();
+  const el=document.querySelector('.desktop-icon[data-id="'+targetFileForAction+'"]');if(el)el.remove();
   const files=await getFromDB(STORE_FILES,'user_files');
   if(files&&files[targetFileForAction]){delete files[targetFileForAction];await saveToDB(STORE_FILES,'user_files',files);}
   const media=await getFromDB(STORE_FILES,'media_files');
@@ -635,7 +857,7 @@ async function executeDelete(){
   if($('gallery-content'))loadGallery();
   if($('mp-tbody'))initMusicPlayer();
  }else if(targetMediaForAction){
-  const el=document.querySelector(`.desktop-icon[data-id="${targetMediaForAction}"]`);if(el)el.remove();
+  const el=document.querySelector('.desktop-icon[data-id="'+targetMediaForAction+'"]');if(el)el.remove();
   const media=await getFromDB(STORE_FILES,'media_files');
   if(media&&media[targetMediaForAction]){delete media[targetMediaForAction];await saveToDB(STORE_FILES,'media_files',media);}
   const pos=await getFromDB(STORE_ICONS,'positions');
@@ -650,8 +872,8 @@ async function executeDelete(){
 async function setAsWallpaper(){
  if(!targetMediaForAction)return;
  let file=null;
- if(targetMediaForAction==='sys_bg'){const blob=await getFromDB(STORE_RESOURCES,'sys_bg');file={type:'image/png',blob};}
- else if(targetMediaForAction==='sys_bg2'){const blob=await getFromDB(STORE_RESOURCES,'sys_bg2');file={type:'image/png',blob};}
+ if(targetMediaForAction==='sys_bg'){const blob=await getFromDB(STORE_RESOURCES,'sys_bg');file={type:'image/png',blob:blob};}
+ else if(targetMediaForAction==='sys_bg2'){const blob=await getFromDB(STORE_RESOURCES,'sys_bg2');file={type:'image/png',blob:blob};}
  else{const mf=await getFromDB(STORE_FILES,'media_files');file=mf[targetMediaForAction];}
  if(file){const t=file.type.startsWith('video/')?'video':'image';await saveToDB(STORE_SYS,'custom_wallpaper',{type:t,blob:file.blob});applySystemAssets({type:t,blob:file.blob});}
  hideMenus();
@@ -673,23 +895,13 @@ function createWindow(id,title,content,icon,useSysIcon){
  el.style.width='600px';el.style.height='400px';
  el.style.left=Math.max(10,(dw-600)/2)+'px';
  el.style.top=Math.max(10,(dh-400)/2)+'px';
- let iconHtml=`<i class="fas ${icon}" style="color:var(--primary);font-size:12px;"></i>`;
- if(useSysIcon&&sysIconUrl)iconHtml=`<img src="${sysIconUrl}">`;
- el.innerHTML=`
-  <div class="win-header" onmousedown="startWinDrag(event,'${winId}')">
-   ${iconHtml}
-   <div class="win-title">${title}</div>
-   <div class="win-controls">
-    <div class="win-btn" onclick="toggleMinimize('${id}')"><i class="fas fa-minus"></i></div>
-    <div class="win-btn" onclick="toggleMaximize('${id}')"><i class="far fa-square"></i></div>
-    <div class="win-btn close" onclick="closeWindow('${id}')"><i class="fas fa-times"></i></div>
-   </div>
-  </div>
-  <div class="win-content">${content}</div>`;
+ let iconHtml='<i class="fas '+icon+'" style="color:var(--primary);font-size:12px;"></i>';
+ if(useSysIcon&&sysIconUrl)iconHtml='<img src="'+sysIconUrl+'">';
+ el.innerHTML='<div class="win-header" onmousedown="startWinDrag(event,\''+winId+'\')">'+iconHtml+'<div class="win-title">'+title+'</div><div class="win-controls"><div class="win-btn" onclick="toggleMinimize(\''+id+'\')"><i class="fas fa-minus"></i></div><div class="win-btn" onclick="toggleMaximize(\''+id+'\')"><i class="far fa-square"></i></div><div class="win-btn close" onclick="closeWindow(\''+id+'\')"><i class="fas fa-times"></i></div></div></div><div class="win-content">'+content+'</div>';
  el.addEventListener('mousedown',()=>focusWindow(id));
  $('desktop').appendChild(el);
  clampWin(el);
- windows.push({id,el,minimized:false,maximized:false});
+ windows.push({id:id,el:el,minimized:false,maximized:false});
  focusWindow(id);updateTaskbar();
  return el;
 }
@@ -711,17 +923,12 @@ function openApp(id){
   let gpu='Unknown';
   try{const c=document.createElement('canvas');const gl=c.getContext('webgl');if(gl){const ext=gl.getExtension('WEBGL_debug_renderer_info');if(ext)gpu=gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);}}catch(e){}
   gpu=gpu.replace('ANGLE (','').replace(')','');
-  content=`<div class="info-content">
-   <div class="info-row"><div class="info-label">OperationSystem</div><div class="info-value">QuadroOS</div></div>
-   <div class="info-row"><div class="info-label">Version</div><div class="info-value">1.0.2 Beta (Pro Version)</div></div>
-   <div class="info-row"><div class="info-label">CPU</div><div class="info-value">${cpu} Cores</div></div>
-   <div class="info-row"><div class="info-label">GPU</div><div class="info-value">${gpu}</div></div>
-   <div class="info-row"><div class="info-label">Key System</div><div class="info-value">F1FGKW-UTGKS-WRRFD-Q23LFS</div></div></div>`;
+  content='<div class="info-content"><div class="info-row"><div class="info-label">OperationSystem</div><div class="info-value">QuadroOS</div></div><div class="info-row"><div class="info-label">Version</div><div class="info-value">1.0.3 Beta (Pro Version)</div></div><div class="info-row"><div class="info-label">CPU</div><div class="info-value">'+cpu+' Cores</div></div><div class="info-row"><div class="info-label">GPU</div><div class="info-value">'+gpu+'</div></div><div class="info-row"><div class="info-label">Key System</div><div class="info-value">ZX12EEF-LK35FSF-0IDFFLS-DFSFT3A</div></div></div>';
   icon='fa-desktop';
   createWindow(id,title,content,icon,useSysIcon);
  }else if(id.startsWith('file_')){
   getFromDB(STORE_FILES,'user_files').then(files=>{
-   if(files&&files[id]){const f=files[id];createWindow(id,f.name,`<textarea class="text-editor" id="editor-${id}" onblur="saveFileContent('${id}',this.value)">${escapeHtml(f.content)}</textarea>`,f.type==='html'?'fa-code':'fa-file-alt',false);}
+   if(files&&files[id]){const f=files[id];createWindow(id,f.name,'<textarea class="text-editor" id="editor-'+id+'" onblur="saveFileContent(\''+id+'\',this.value)">'+escapeHtml(f.content)+'</textarea>',f.type==='html'?'fa-code':'fa-file-alt',false);}
    unlock();
   }).catch(()=>unlock());
   return;
@@ -729,8 +936,8 @@ function openApp(id){
   getFromDB(STORE_FILES,'media_files').then(mf=>{
    const f=mf&&mf[id];
    if(f){
-    if(f.type.startsWith('image/'))openPreviewWindow('image',f.name,`<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="${URL.createObjectURL(f.blob)}" style="max-width:100%;max-height:100%;"></div>`,'fa-image');
-    else if(f.type.startsWith('video/'))openPreviewWindow('video',f.name,`<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><video src="${URL.createObjectURL(f.blob)}" controls style="max-width:100%;max-height:100%;"></video></div>`,'fa-video');
+    if(f.type.startsWith('image/'))openPreviewWindow('image',f.name,'<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="'+URL.createObjectURL(f.blob)+'" style="max-width:100%;max-height:100%;"></div>','fa-image');
+    else if(f.type.startsWith('video/'))openPreviewWindow('video',f.name,'<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><video src="'+URL.createObjectURL(f.blob)+'" controls style="max-width:100%;max-height:100%;"></video></div>','fa-video');
     else if(f.type.startsWith('audio/'))playMediaFile(f);
     else toast('Нет приложения для открытия этого файла');
    }
@@ -739,92 +946,50 @@ function openApp(id){
   return;
  }else if(id==='explorer'){
   title='Проводник (C:)';icon='fa-folder-open';
-  content=`<div class="explorer-layout">
-   <div class="explorer-sidebar">
-    <div class="explorer-nav-item active" onclick="loadExplorerFolder('root',this)"><i class="fas fa-hdd"></i> Диск C:</div>
-    <div class="explorer-nav-item" onclick="loadExplorerFolder('downloads',this)"><i class="fas fa-download"></i> Downloads</div>
-    <div class="explorer-nav-item" onclick="loadExplorerFolder('music',this)"><i class="fas fa-music"></i> Music</div>
-    <div class="explorer-nav-item" onclick="loadExplorerFolder('photos',this)"><i class="fas fa-image"></i> Photos</div>
-    <div class="explorer-nav-item" onclick="loadExplorerFolder('videos',this)"><i class="fas fa-video"></i> Videos</div>
-   </div>
-   <div style="flex:1;display:flex;flex-direction:column;">
-    <div class="upload-btn-area"><input type="file" id="file-upload" style="display:none" onchange="handleFileUpload(this)" multiple><button class="upload-btn" onclick="document.getElementById('file-upload').click()"><i class="fas fa-upload"></i> Загрузить файлы</button></div>
-    <div class="explorer-main" id="explorer-content"></div>
-   </div></div>`;
+  content='<div class="explorer-layout"><div class="explorer-sidebar"><div class="explorer-nav-item active" onclick="loadExplorerFolder(\'root\',this)"><i class="fas fa-hdd"></i> Диск C:</div><div class="explorer-nav-item" onclick="loadExplorerFolder(\'downloads\',this)"><i class="fas fa-download"></i> Downloads</div><div class="explorer-nav-item" onclick="loadExplorerFolder(\'music\',this)"><i class="fas fa-music"></i> Music</div><div class="explorer-nav-item" onclick="loadExplorerFolder(\'photos\',this)"><i class="fas fa-image"></i> Photos</div><div class="explorer-nav-item" onclick="loadExplorerFolder(\'videos\',this)"><i class="fas fa-video"></i> Videos</div></div><div style="flex:1;display:flex;flex-direction:column;"><div class="upload-btn-area"><input type="file" id="file-upload" style="display:none" onchange="handleFileUpload(this)" multiple><button class="upload-btn" onclick="document.getElementById(\'file-upload\').click()"><i class="fas fa-upload"></i> Загрузить файлы</button></div><div class="explorer-main" id="explorer-content"></div></div></div>';
   createWindow(id,title,content,icon,false);
   setTimeout(()=>loadExplorerFolder('root'),100);
  }else if(id==='gallery'){
   title='Галерея';icon='fa-images';
-  content=`<div class="gallery-container"><div class="gallery-sidebar"><div class="explorer-nav-item active"><i class="fas fa-images"></i> Все медиа</div></div><div class="gallery-grid" id="gallery-content"></div></div>`;
+  content='<div class="gallery-container"><div class="gallery-sidebar"><div class="explorer-nav-item active"><i class="fas fa-images"></i> Все медиа</div></div><div class="gallery-grid" id="gallery-content"></div></div>';
   createWindow(id,title,content,icon,false);
   setTimeout(loadGallery,100);
  }else if(id==='music'){
   title='Музыка';icon='fa-music';
-  content=`<div class="music-layout"><div class="music-sidebar">
-   <div class="music-nav active" onclick="switchMusicTab('player',this)"><i class="fas fa-play-circle"></i> Музыка</div>
-   <div class="music-nav" onclick="switchMusicTab('list',this)"><i class="fas fa-list"></i> Список</div></div>
-   <div class="music-main">
-    <div class="music-view active" id="music-player-view"><div class="player-center">
-     <div class="album-art-lg"><i class="fas fa-music"></i></div>
-     <div class="track-info-lg"><div class="track-title-lg" id="mp-title">Нет треков</div><div class="track-artist-lg" id="mp-artist">QuadroOS Audio</div></div>
-     <div class="progress-area"><div class="seek-bar" id="mp-seek" onclick="seekMusic(event)"><div class="seek-fill" id="mp-fill"></div></div><div class="time-labels"><span id="mp-cur">0:00</span><span id="mp-dur">0:00</span></div></div>
-     <div class="controls-lg"><button class="ctrl-btn-lg" onclick="prevTrack()"><i class="fas fa-step-backward"></i></button><button class="ctrl-btn-lg play-btn-lg" id="mp-play-btn" onclick="togglePlay()"><i class="fas fa-play"></i></button><button class="ctrl-btn-lg" onclick="nextTrack()"><i class="fas fa-step-forward"></i></button></div>
-     <button class="delete-track-btn" id="mp-delete-btn" onclick="deleteCurrentTrack()" style="display:none;"><i class="fas fa-trash"></i> Удалить трек</button>
-    </div></div>
-    <div class="music-view" id="music-list-view"><table class="track-list-table"><thead><tr><th>#</th><th>Название</th><th>Автор</th><th>Время</th></tr></thead><tbody id="mp-tbody"></tbody></table></div>
-   </div></div>`;
+  content='<div class="music-layout"><div class="music-sidebar"><div class="music-nav active" onclick="switchMusicTab(\'player\',this)"><i class="fas fa-play-circle"></i> Музыка</div><div class="music-nav" onclick="switchMusicTab(\'list\',this)"><i class="fas fa-list"></i> Список</div></div><div class="music-main"><div class="music-view active" id="music-player-view"><div class="player-center"><div class="album-art-lg" id="mp-album-art"><i class="fas fa-music"></i></div><div class="track-info-lg"><div class="track-title-lg" id="mp-title">Нет треков</div><div class="track-artist-lg" id="mp-artist">QuadroOS Audio</div></div><div class="progress-area"><div class="seek-bar" id="mp-seek" onclick="seekMusic(event)"><div class="seek-fill" id="mp-fill"></div></div><div class="time-labels"><span id="mp-cur">0:00</span><span id="mp-dur">0:00</span></div></div><div class="controls-lg"><button class="ctrl-btn-lg" onclick="prevTrack()"><i class="fas fa-step-backward"></i></button><button class="ctrl-btn-lg play-btn-lg" id="mp-play-btn" onclick="togglePlay()"><i class="fas fa-play"></i></button><button class="ctrl-btn-lg" onclick="nextTrack()"><i class="fas fa-step-forward"></i></button></div><button class="delete-track-btn" id="mp-delete-btn" onclick="deleteCurrentTrack()" style="display:none;"><i class="fas fa-trash"></i> Удалить трек</button></div></div><div class="music-view" id="music-list-view"><table class="track-list-table"><thead><tr><th>#</th><th>Название</th><th>Автор</th><th>Время</th></tr></thead><tbody id="mp-tbody"></tbody></table></div></div></div>';
   createWindow(id,title,content,icon,false);
   setTimeout(initMusicPlayer,100);
  }else if(id==='browser'){
   title='Браузер';icon='fa-globe';
-  content=`<div class="browser-wrap">
-   <div class="browser-bar">
-    <button class="br-btn" onclick="brBack()" title="Назад"><i class="fas fa-arrow-left"></i></button>
-    <button class="br-btn" onclick="brForward()" title="Вперёд"><i class="fas fa-arrow-right"></i></button>
-    <button class="br-btn" onclick="brReload()" title="Обновить"><i class="fas fa-rotate-right"></i></button>
-    <input class="br-address" id="br-address" placeholder="Поиск в Google или адрес сайта..." onkeydown="if(event.key==='Enter')brGo()">
-    <button class="br-btn" onclick="brGo()" title="Перейти"><i class="fas fa-arrow-right"></i></button>
-    <button class="br-btn" id="brProxyBtn" onclick="toggleBrProxy()" title="Прокси-режим (принудительно)"><i class="fas fa-shield-halved"></i></button>
-    <button class="br-btn" onclick="brExternal()" title="Открыть в новой вкладке (100%)"><i class="fas fa-external-link-alt"></i></button>
-   </div>
-   <div class="br-quick">
-    <span onclick="brOpen('https://www.google.com/webhp?igu=1')">🔍 Google</span>
-    <span onclick="brOpen('https://ru.m.wikipedia.org/wiki/Заглавная_страница')">📚 Wikipedia</span>
-    <span onclick="brOpen('https://www.openstreetmap.org/export/embed.html?bbox=37.58,55.73,37.64,55.76')">🗺️ Карта</span>
-    <span onclick="brOpen('https://example.com')">🌐 Example</span>
-    <span onclick="brOpen('https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ')">📺 YouTube</span>
-   </div>
-   <iframe id="br-frame" class="br-frame" src="https://www.google.com/webhp?igu=1"></iframe>
-   <div class="br-note">💡 Google, Wikipedia и Example работают напрямую. Остальные сайты автоматически открываются через встроенный прокси. Кнопка внешней вкладки — 100% способ для любых сайтов.</div>
-  </div>`;
+  content='<div class="browser-wrap"><div class="browser-bar"><button class="br-btn" onclick="brBack()" title="Назад"><i class="fas fa-arrow-left"></i></button><button class="br-btn" onclick="brForward()" title="Вперёд"><i class="fas fa-arrow-right"></i></button><button class="br-btn" onclick="brReload()" title="Обновить"><i class="fas fa-rotate-right"></i></button><input class="br-address" id="br-address" placeholder="Поиск в Google или адрес сайта..." onkeydown="if(event.key===\'Enter\')brGo()"><button class="br-btn" onclick="brGo()" title="Перейти"><i class="fas fa-arrow-right"></i></button><button class="br-btn" id="brProxyBtn" onclick="toggleBrProxy()" title="Прокси-режим (принудительно)"><i class="fas fa-shield-halved"></i></button><button class="br-btn" onclick="brExternal()" title="Открыть в новой вкладке (100%)"><i class="fas fa-external-link-alt"></i></button></div><div class="br-quick"><span onclick="brOpen(\'https://www.google.com/webhp?igu=1\')">🔍 Google</span><span onclick="brOpen(\'https://ru.m.wikipedia.org/wiki/Заглавная_страница\')">📚 Wikipedia</span><span onclick="brOpen(\'https://www.openstreetmap.org/export/embed.html?bbox=37.58,55.73,37.64,55.76\')">🗺️ Карта</span><span onclick="brOpen(\'https://example.com\')">🌐 Example</span><span onclick="brOpen(\'https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ\')">📺 YouTube</span></div><iframe id="br-frame" class="br-frame" src="https://www.google.com/webhp?igu=1"></iframe><div class="br-note">💡 Google, Wikipedia и Example работают напрямую. Остальные сайты автоматически открываются через встроенный прокси. Кнопка внешней вкладки — 100% способ для любых сайтов.</div></div>';
   createWindow(id,title,content,icon,false);
   brHist=['https://www.google.com/webhp?igu=1'];brIdx=0;
+ }else if(id==='htmleditor'){
+  title='HTML Editor';icon='fa-code';
+  content='<div class="html-editor-wrap" style="display:flex;flex-direction:column;height:100%;"><div class="html-editor-toolbar"><button class="he-btn" onclick="document.getElementById(\'he-file-input\').click()"><i class="fas fa-folder-open"></i> Открыть</button><input type="file" id="he-file-input" accept=".html,.htm,.txt" style="display:none" onchange="loadHtmlFile(this)"><button class="he-btn run" id="he-btn-run" onclick="runHtmlCode()"><i class="fas fa-play"></i> Запустить</button><button class="he-btn stop" id="he-btn-stop" onclick="stopHtmlCode()" disabled><i class="fas fa-stop"></i> Стоп</button><button class="he-btn" onclick="saveHtmlFile()"><i class="fas fa-save"></i> Сохранить</button></div><div class="html-editor-body" id="he-body"><textarea class="he-code-area" id="he-code-area" spellcheck="false" placeholder="<!-- Напишите ваш HTML код здесь -->\n<h1>Hello World</h1>"></textarea><iframe class="he-preview-frame" id="he-preview-frame"></iframe></div></div>';
+  createWindow(id,title,content,icon,false);
  }else if(id==='stats'){
   title='Статистика системы и ее ресурсов';icon='fa-chart-pie';
-  content=`<div class="stats-container" id="stats-content">Загрузка...</div>`;
+  content='<div class="stats-container" id="stats-content">Загрузка...</div>';
   createWindow(id,title,content,icon,false);
   setTimeout(renderStats,100);
  }else if(id==='settings'){
   title='Настройки';icon='fa-cog';
-  content=`<div class="settings-wrap">
-   <div class="settings-title">Настройки</div>
-   <div class="set-row"><div class="set-name"><i class="fas fa-microchip"></i> Аппаратное ускорение GPU</div><label class="qos-switch"><input type="checkbox" id="gpu-toggle" onchange="toggleGPU(this.checked)"><span class="qos-track"></span></label></div>
-   <div class="set-row"><div class="set-name"><i class="fas fa-database"></i> Ограничение максимального размера всей системы</div><label class="qos-switch"><input type="checkbox" id="limit-toggle" onchange="toggleLimit(this.checked)"><span class="qos-track"></span></label></div>
-   <div class="limit-scale" id="limit-scale" style="display:none"><div class="limit-stops" id="limit-stops"></div><div class="limit-note">Внимание: все ваши новый файлы при достижении выбранной планки не сохранятся или старые файлы которым более 30 дней могут быть удалены с целью освободить место если оно занято на 80%.</div></div>
-  </div>`;
+  content='<div class="settings-wrap"><div class="settings-title">Настройки</div><div class="set-row"><div class="set-name"><i class="fas fa-microchip"></i> Аппаратное ускорение GPU</div><label class="qos-switch"><input type="checkbox" id="gpu-toggle" onchange="toggleGPU(this.checked)"><span class="qos-track"></span></label></div><div class="set-row"><div class="set-name"><i class="fas fa-database"></i> Ограничение максимального размера всей системы</div><label class="qos-switch"><input type="checkbox" id="limit-toggle" onchange="toggleLimit(this.checked)"><span class="qos-track"></span></label></div><div class="limit-scale" id="limit-scale" style="display:none"><div class="limit-stops" id="limit-stops"></div><div class="limit-note">Внимание: все ваши новый файлы при достижении выбранной планки не сохранятся или старые файлы которым более 30 дней могут быть удалены с целью освободить место если оно занято на 80%.</div></div></div>';
   createWindow(id,title,content,icon,false);
   setTimeout(applySettingsState,50);
  }else if(id==='installer'){
   title='Установщик QuadroOS';icon='fa-download';
-  content=`<div class="installer-wrap">
-   <div class="installer-title">Установщик QuadroOS</div>
-   <div class="installer-block"><h4>Переустановка ресурсов QuadroOS</h4><p>Удаляет старые системные ресурсы и заново устанавливает их с сервера QuadroOS. Потребуется перезагрузка системы.</p><button class="inst-btn reinstall" onclick="startReinstall()"><i class="fas fa-rotate"></i> Переустановка ресурсов QuadroOS</button></div>
-   <div class="installer-block"><h4>Полное удаление системы</h4><p>Удаляет QuadroOS, все системные ресурсы и все ваши данные с устройства безвозвратно.</p><button class="inst-btn uninstall" onclick="confirmUninstall()"><i class="fas fa-trash"></i> Uninstall QuadroOS</button></div>
-  </div>`;
+  content='<div class="installer-wrap"><div class="installer-title">Установщик QuadroOS</div><div class="installer-block"><h4>Переустановка ресурсов QuadroOS</h4><p>Удаляет старые системные ресурсы и заново устанавливает их с сервера QuadroOS. Потребуется перезагрузка системы.</p><button class="inst-btn reinstall" onclick="startReinstall()"><i class="fas fa-rotate"></i> Переустановка ресурсов QuadroOS</button></div><div class="installer-block"><h4>Полное удаление системы</h4><p>Удаляет QuadroOS, все системные ресурсы и все ваши данные с устройства безвозвратно.</p><button class="inst-btn uninstall" onclick="confirmUninstall()"><i class="fas fa-trash"></i> Uninstall QuadroOS</button></div></div>';
   createWindow(id,title,content,icon,false);
  }else if(id==='trash'){
   title='Корзина';content='<div style="padding:20px;text-align:center;color:#666;">Корзина пуста</div>';icon='fa-trash';
   createWindow(id,title,content,icon,false);
+ }else if(id==='personalization'){
+  title='Персонализация системы';icon='fa-palette';
+  content='<div class="settings-wrap"><div class="settings-title">Персонализация системы</div><div class="set-row"><div class="set-name"><i class="fas fa-image"></i> Обои рабочего стола</div><button class="upload-btn" onclick="document.getElementById(\'pers-wallpaper-input\').click()">Выбрать файл</button><input type="file" id="pers-wallpaper-input" style="display:none" accept="image/*,video/*" onchange="applyPersonalizationWallpaper(this)"></div><div class="set-row"><div class="set-name"><i class="fas fa-palette"></i> Цвет акцента (иконок)</div><input type="color" id="pers-color" value="#00d4ff" onchange="applyPersonalizationColor(this.value)" style="width:40px;height:30px;border:none;background:none;cursor:pointer;"></div><div class="set-row"><div class="set-name"><i class="fas fa-adjust"></i> Прозрачность панели и окон</div><input type="range" id="pers-opacity" min="0.3" max="0.95" step="0.05" value="0.85" onchange="applyPersonalizationOpacity(this.value)" style="width:100px;"></div><div class="set-row"><div class="set-name"><i class="fas fa-sun"></i> Эффект отражения (Glassmorphism)</div><label class="qos-switch"><input type="checkbox" id="pers-reflection" onchange="applyPersonalizationReflection(this.checked)"><span class="qos-track"></span></label></div></div>';
+  createWindow(id,title,content,icon,false);
+  setTimeout(loadPersonalizationSettings, 100);
  }
  unlock();
 }
@@ -847,7 +1012,7 @@ function renderLimitScale(visible,gb){
  [1,5,10,25,50,100].forEach(v=>{
   const s=document.createElement('div');
   s.className='limit-stop'+(v===gb?' active':'');
-  s.innerHTML=`<div class="dot"></div><span>${v}GB</span>`;
+  s.innerHTML='<div class="dot"></div><span>'+v+'GB</span>';
   s.onclick=async()=>{await saveToDB(STORE_SYS,'limit_gb',v);renderLimitScale(true,v);toast('Лимит хранилища: '+v+' GB');};
   stopsEl.appendChild(s);
  });
@@ -888,6 +1053,62 @@ function brBack(){if(brIdx>0){brIdx--;const u=brHist[brIdx];const f=$('br-frame'
 function brForward(){if(brIdx<brHist.length-1){brIdx++;const u=brHist[brIdx];const f=$('br-frame');if(f)f.src=brResolve(u);const a=$('br-address');if(a)a.value=u;}}
 function brReload(){const f=$('br-frame');if(f)f.src=f.src;}
 function brExternal(){const u=brHist[brIdx]||'https://www.google.com/webhp?igu=1';window.open(u,'_blank');}
+
+/* === HTML EDITOR LOGIC === */
+function loadHtmlFile(input){
+ const file=input.files[0];
+ if(!file)return;
+ const reader=new FileReader();
+ reader.onload=(e)=>{
+  const codeArea=document.getElementById('he-code-area');
+  if(codeArea){
+   codeArea.value=e.target.result;
+   toast('Файл загружен: '+file.name);
+  }
+ };
+ reader.readAsText(file);
+}
+function runHtmlCode(){
+ const code=document.getElementById('he-code-area').value;
+ const frame=document.getElementById('he-preview-frame');
+ const body=document.getElementById('he-body');
+ const btnRun=document.getElementById('he-btn-run');
+ const btnStop=document.getElementById('he-btn-stop');
+ if(frame&&body){
+  frame.srcdoc=code;
+  body.classList.add('preview-mode');
+  btnRun.disabled=true;
+  btnStop.disabled=false;
+  toast('Код запущен');
+ }
+}
+function stopHtmlCode(){
+ const frame=document.getElementById('he-preview-frame');
+ const body=document.getElementById('he-body');
+ const btnRun=document.getElementById('he-btn-run');
+ const btnStop=document.getElementById('he-btn-stop');
+ if(frame&&body){
+  frame.srcdoc='';
+  body.classList.remove('preview-mode');
+  btnRun.disabled=false;
+  btnStop.disabled=true;
+  toast('Редактирование');
+ }
+}
+function saveHtmlFile(){
+ const code=document.getElementById('he-code-area').value;
+ const fileName=prompt("Введите имя файла (например, index.html):", "index.html") || "index.html";
+ if(!fileName) return;
+ const id='file_'+Date.now();
+ getFromDB(STORE_FILES,'user_files').then(files=>{
+  files = files || {};
+  files[id] = {name: fileName, type: 'html', content: code, folder: 'htmleditor', created: Date.now()};
+  saveToDB(STORE_FILES,'user_files',files).then(()=>{
+   toast('Файл сохранен в папку HTML Editor на диске C:');
+  });
+ });
+}
+
 /* === СТАТИСТИКА === */
 function initUsage(){
  if(usageInit)return;usageInit=true;
@@ -910,21 +1131,7 @@ async function renderStats(){
  const totalTime=usageSeconds;
  const installDate=await getFromDB(STORE_SYS,'install_date')||Date.now();
  const h=Math.floor(totalTime/3600),m=Math.floor((totalTime%3600)/60),s=totalTime%60;
- container.innerHTML=`
-  <div class="stats-header">Статистика системы и ее ресурсов</div>
-  <div class="stats-section-title">Ресурсы системы и файлы</div>
-  <div class="chart-container"><div class="donut-chart" style="background:conic-gradient(#00d4ff 0% ${pSys}%,#0066ff ${pSys}% ${pSys+pFiles}%,#ff00ff ${pSys+pFiles}% ${pSys+pFiles+pAudio}%,#ffff00 ${pSys+pFiles+pAudio}% 100%)"><div class="donut-hole"><span class="donut-total-label">Всего</span><span class="donut-total-value">${formatBytes(total)}</span></div></div></div>
-  <div class="stats-list">
-   <div class="stat-row"><span class="stat-label" style="color:#00d4ff">Система <span class="stat-pct">${pSys.toFixed(1)}%</span></span><span class="stat-value">${formatBytes(sizeSystem)}</span></div>
-   <div class="stat-row"><span class="stat-label" style="color:#0066ff">Файлы пользователя <span class="stat-pct">${pFiles.toFixed(1)}%</span></span><span class="stat-value">${formatBytes(sizeFiles)}</span></div>
-   <div class="stat-row"><span class="stat-label" style="color:#ff00ff">Аудио пользователя <span class="stat-pct">${pAudio.toFixed(1)}%</span></span><span class="stat-value">${formatBytes(sizeAudio)}</span></div>
-   <div class="stat-row"><span class="stat-label" style="color:#ffff00">Видео и Фото пользователя <span class="stat-pct">${pMedia.toFixed(1)}%</span></span><span class="stat-value">${formatBytes(sizeVideoPhoto)}</span></div>
-  </div>
-  <div class="stats-section-title">Статистика системы</div>
-  <div class="stats-list">
-   <div class="stat-row"><span class="stat-label">Время использования</span><span class="stat-value">${h}ч ${m}м ${s}с</span></div>
-   <div class="stat-row"><span class="stat-label">Дата установки</span><span class="stat-value">${new Date(installDate).toLocaleString()}</span></div>
-  </div>`;
+ container.innerHTML='<div class="stats-header">Статистика системы и ее ресурсов</div><div class="stats-section-title">Ресурсы системы и файлы</div><div class="chart-container"><div class="donut-chart" style="background:conic-gradient(#00d4ff 0% '+pSys+'%,#0066ff '+pSys+'% '+(pSys+pFiles)+'%,#ff00ff '+(pSys+pFiles)+'% '+(pSys+pFiles+pAudio)+'%,#ffff00 '+(pSys+pFiles+pAudio)+'% 100%)"><div class="donut-hole"><span class="donut-total-label">Всего</span><span class="donut-total-value">'+formatBytes(total)+'</span></div></div></div><div class="stats-list"><div class="stat-row"><span class="stat-label" style="color:#00d4ff">Система <span class="stat-pct">'+pSys.toFixed(1)+'%</span></span><span class="stat-value">'+formatBytes(sizeSystem)+'</span></div><div class="stat-row"><span class="stat-label" style="color:#0066ff">Файлы пользователя <span class="stat-pct">'+pFiles.toFixed(1)+'%</span></span><span class="stat-value">'+formatBytes(sizeFiles)+'</span></div><div class="stat-row"><span class="stat-label" style="color:#ff00ff">Аудио пользователя <span class="stat-pct">'+pAudio.toFixed(1)+'%</span></span><span class="stat-value">'+formatBytes(sizeAudio)+'</span></div><div class="stat-row"><span class="stat-label" style="color:#ffff00">Видео и Фото пользователя <span class="stat-pct">'+pMedia.toFixed(1)+'%</span></span><span class="stat-value">'+formatBytes(sizeVideoPhoto)+'</span></div></div><div class="stats-section-title">Статистика системы</div><div class="stats-list"><div class="stat-row"><span class="stat-label">Время использования</span><span class="stat-value">'+h+'ч '+m+'м '+s+'с</span></div><div class="stat-row"><span class="stat-label">Дата установки</span><span class="stat-value">'+new Date(installDate).toLocaleString()+'</span></div></div>';
  statsBusy=false;
  if(!statsInterval){statsInterval=setInterval(()=>{if(windows.find(w=>w.id==='stats'))renderStats();else{clearInterval(statsInterval);statsInterval=null;}},1000);}
 }
@@ -939,46 +1146,71 @@ async function loadExplorerFolder(folder,navEl){
  const files=await getFromDB(STORE_FILES,'user_files')||{};
  const mediaFiles=await getFromDB(STORE_FILES,'media_files')||{};
  let itemsToShow=[];
+ 
  if(folder==='root'){
   const q=document.createElement('div');q.className='file-item';
-  q.innerHTML=`<i class="fas fa-folder" style="color:var(--primary)"></i><span>QuadroOS</span>`;
+  q.innerHTML='<i class="fas fa-folder" style="color:var(--primary)"></i><span>QuadroOS</span>';
   q.onclick=()=>loadExplorerFolder('quadroos');
   container.appendChild(q);
-  const d=document.createElement('div');d.className='file-item';
-  d.innerHTML=`<i class="fas fa-folder" style="color:var(--primary)"></i><span>Downloads</span>`;
-  d.onclick=()=>loadExplorerFolder('downloads');
-  container.appendChild(d);
+  
+  const he=document.createElement('div');he.className='file-item';
+  he.innerHTML='<i class="fas fa-folder" style="color:var(--primary)"></i><span>HTML Editor</span>';
+  he.onclick=()=>loadExplorerFolder('htmleditor');
+  container.appendChild(he);
   return;
  }
+ 
  if(folder==='quadroos'){
   const names={sys_icon:'SystemIcon.png',sys_bg2:'QuadroDefaultBackground2.png',sys_bg:'SystemDefaultBackground.png',sys_music:'QuadroOS download music.m4a'};
   for(const r of SYS_RESOURCES){
    const blob=await getFromDB(STORE_RESOURCES,r.id);if(!blob)continue;
    const el=document.createElement('div');el.className='file-item';
    const isImg=r.id!=='sys_music';
-   el.innerHTML=`<i class="fas ${isImg?'fa-image':'fa-music'}"></i><span>${names[r.id]}</span>`;
+   el.innerHTML='<i class="fas '+(isImg?'fa-image':'fa-music')+'"></i><span>'+names[r.id]+'</span>';
    el.onclick=()=>{
-    if(isImg){const u=URL.createObjectURL(blob);openPreviewWindow('image',names[r.id],`<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="${u}" style="max-width:100%;max-height:100%;"></div>`,'fa-image');}
+    if(isImg){const u=URL.createObjectURL(blob);openPreviewWindow('image',names[r.id],'<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="'+u+'" style="max-width:100%;max-height:100%;"></div>','fa-image');}
     else{openApp('music');setTimeout(()=>{const idx=playlist.findIndex(t=>t.id===SYS_MUSIC_ID);if(idx!==-1)loadTrack(idx);},250);}
    };
    container.appendChild(el);
   }
   return;
  }
+
+ if(folder==='htmleditor'){
+  Object.keys(files).forEach(k=>{
+   if(files[k].folder === 'htmleditor') itemsToShow.push(Object.assign({},files[k],{id:k,category:'doc'}));
+  });
+ }
+
  if(folder==='downloads'){
-  Object.keys(files).forEach(k=>itemsToShow.push({...files[k],id:k,category:'doc'}));
-  Object.keys(mediaFiles).forEach(k=>itemsToShow.push({...mediaFiles[k],id:k,category:'media'}));
- }else if(folder==='music'){Object.keys(mediaFiles).forEach(k=>{if(mediaFiles[k].type&&mediaFiles[k].type.startsWith('audio/'))itemsToShow.push({...mediaFiles[k],id:k,category:'media'});});}
- else if(folder==='photos'){Object.keys(mediaFiles).forEach(k=>{if(mediaFiles[k].type&&mediaFiles[k].type.startsWith('image/'))itemsToShow.push({...mediaFiles[k],id:k,category:'media'});});}
- else if(folder==='videos'){Object.keys(mediaFiles).forEach(k=>{if(mediaFiles[k].type&&mediaFiles[k].type.startsWith('video/'))itemsToShow.push({...mediaFiles[k],id:k,category:'media'});});}
- if(itemsToShow.length===0){container.innerHTML='<div style="grid-column:1/-1;text-align:center;color:#666;padding:20px;">Папка пуста</div>';return;}
+  Object.keys(files).forEach(k=>{ if(!files[k].folder) itemsToShow.push(Object.assign({},files[k],{id:k,category:'doc'})); });
+  Object.keys(mediaFiles).forEach(k=>itemsToShow.push(Object.assign({},mediaFiles[k],{id:k,category:'media'})));
+ }else if(folder==='music'){
+  Object.keys(mediaFiles).forEach(k=>{if(mediaFiles[k].type&&mediaFiles[k].type.startsWith('audio/'))itemsToShow.push(Object.assign({},mediaFiles[k],{id:k,category:'media'}));});
+ }else if(folder==='photos'){
+  Object.keys(mediaFiles).forEach(k=>{if(mediaFiles[k].type&&mediaFiles[k].type.startsWith('image/'))itemsToShow.push(Object.assign({},mediaFiles[k],{id:k,category:'media'}));});
+ }else if(folder==='videos'){
+  Object.keys(mediaFiles).forEach(k=>{if(mediaFiles[k].type&&mediaFiles[k].type.startsWith('video/'))itemsToShow.push(Object.assign({},mediaFiles[k],{id:k,category:'media'}));});
+ }
+
+ if(itemsToShow.length===0 && folder!=='root' && folder!=='quadroos'){
+  container.innerHTML='<div style="grid-column:1/-1;text-align:center;color:#666;padding:20px;">Папка пуста</div>';
+  return;
+ }
+ 
  itemsToShow.forEach(item=>{
   const el=document.createElement('div');el.className='file-item';
-  el.innerHTML=`<i class="fas ${iconForItem(item)}"></i><span>${item.name}</span>`;
+  let iconHtml = `<i class="fas ${iconForItem(item)}"></i>`;
+  if(item.type && item.type.startsWith('image/')) {
+   iconHtml = `<img src="${URL.createObjectURL(item.blob)}" style="width:32px;height:32px;object-fit:cover;border-radius:4px;">`;
+  } else if(item.type && item.type.startsWith('video/')) {
+   iconHtml = `<video src="${URL.createObjectURL(item.blob)}" style="width:32px;height:32px;object-fit:cover;border-radius:4px;" muted></video>`;
+  }
+  el.innerHTML = iconHtml + `<span>${item.name}</span>`;
   el.onclick=()=>{
    if(item.category==='doc')openApp(item.id);
-   else if(item.type&&item.type.startsWith('image/'))openPreviewWindow('image',item.name,`<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="${URL.createObjectURL(item.blob)}" style="max-width:100%;max-height:100%;"></div>`,'fa-image');
-   else if(item.type&&item.type.startsWith('video/'))openPreviewWindow('video',item.name,`<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><video src="${URL.createObjectURL(item.blob)}" controls style="max-width:100%;max-height:100%;"></video></div>`,'fa-video');
+   else if(item.type&&item.type.startsWith('image/'))openPreviewWindow('image',item.name,'<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="'+URL.createObjectURL(item.blob)+'" style="max-width:100%;max-height:100%;"></div>','fa-image');
+   else if(item.type&&item.type.startsWith('video/'))openPreviewWindow('video',item.name,'<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><video src="'+URL.createObjectURL(item.blob)+'" controls style="max-width:100%;max-height:100%;"></video></div>','fa-video');
    else if(item.type&&item.type.startsWith('audio/'))playMediaFile(item);
    else toast('Нет приложения для открытия .'+(item.name||'').split('.').pop());
   };
@@ -998,7 +1230,7 @@ function startExplorerDrag(e,item){
  const move=ev=>{
   if(!ghost&&(Math.abs(ev.clientX-sx)>6||Math.abs(ev.clientY-sy)>6)){
    ghost=document.createElement('div');ghost.className='drag-ghost';
-   ghost.innerHTML=`<i class="fas ${iconForItem(item)}"></i><span>${item.name}</span>`;
+   ghost.innerHTML='<i class="fas '+iconForItem(item)+'"></i><span>'+item.name+'</span>';
    document.body.appendChild(ghost);
   }
   if(ghost){ghost.style.left=(ev.clientX+12)+'px';ghost.style.top=(ev.clientY+12)+'px';}
@@ -1029,7 +1261,7 @@ async function handleFileUpload(input){
    const blob=new Blob([e.target.result],{type:file.type||'application/octet-stream'});
    const mediaFiles=await getFromDB(STORE_FILES,'media_files')||{};
    const id='media_'+Date.now()+Math.random().toString(36).substr(2,9);
-   mediaFiles[id]={name:file.name,type:file.type||'',blob,created:Date.now()};
+   mediaFiles[id]={name:file.name,type:file.type||'',blob:blob,created:Date.now()};
    await saveToDB(STORE_FILES,'media_files',mediaFiles);
    if($('explorer-content'))loadExplorerFolder(currentFolder);
    if($('gallery-content'))loadGallery();
@@ -1042,51 +1274,40 @@ async function handleFileUpload(input){
 async function loadGallery(){
  const container=$('gallery-content');if(!container)return;
  container.innerHTML='';
- 
- // === ИСПРАВЛЕНИЕ: Добавляем ОБА системных фона в галерею с бейджем SYSTEM ===
  let sysCount=0;
- 
- // 1. Новые обои (по умолчанию)
  if(sysBg2Url){
   sysCount++;
   const el=document.createElement('div');el.className='gallery-item';
-  el.innerHTML=`<img src="${sysBg2Url}"><div class="system-badge">SYSTEM</div>`;
-  el.onclick=()=>openPreviewWindow('image','System Wallpaper 2 (Default)',`<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="${sysBg2Url}" style="max-width:100%;max-height:100%;object-fit:contain;"></div>`,'fa-image');
+  el.innerHTML='<img src="'+sysBg2Url+'"><div class="system-badge">SYSTEM</div>';
+  el.onclick=()=>openPreviewWindow('image','System Wallpaper 2 (Default)','<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="'+sysBg2Url+'" style="max-width:100%;max-height:100%;object-fit:contain;"></div>','fa-image');
   el.oncontextmenu=e=>{e.preventDefault();e.stopPropagation();targetMediaForAction='sys_bg2';$('gallery-delete-btn').style.display='none';showCtxMenu(e.pageX,e.pageY,'gallery-ctx-menu');};
   container.appendChild(el);
  }
- 
- // 2. Старые обои
  if(sysBgUrl){
   sysCount++;
   const el=document.createElement('div');el.className='gallery-item';
-  el.innerHTML=`<img src="${sysBgUrl}"><div class="system-badge">SYSTEM</div>`;
-  el.onclick=()=>openPreviewWindow('image','System Wallpaper',`<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="${sysBgUrl}" style="max-width:100%;max-height:100%;object-fit:contain;"></div>`,'fa-image');
+  el.innerHTML='<img src="'+sysBgUrl+'"><div class="system-badge">SYSTEM</div>';
+  el.onclick=()=>openPreviewWindow('image','System Wallpaper','<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="'+sysBgUrl+'" style="max-width:100%;max-height:100%;object-fit:contain;"></div>','fa-image');
   el.oncontextmenu=e=>{e.preventDefault();e.stopPropagation();targetMediaForAction='sys_bg';$('gallery-delete-btn').style.display='none';showCtxMenu(e.pageX,e.pageY,'gallery-ctx-menu');};
   container.appendChild(el);
  }
-
- // === Пользовательские файлы ===
  const mediaFiles=await getFromDB(STORE_FILES,'media_files')||{};
  const keys=Object.keys(mediaFiles);
  const media=keys.map(k=>mediaFiles[k]).filter(f=>f.type&&(f.type.startsWith('image/')||f.type.startsWith('video/')));
- 
- // Проверка на пустоту (если нет ни системных, ни пользовательских)
- if(media.length===0 && sysCount===0){
+ if(media.length===0&&sysCount===0){
   container.innerHTML='<div style="grid-column:1/-1;text-align:center;color:#666;padding:20px;">Нет медиафайлов.</div>';
   return;
  }
- 
  media.forEach(img=>{
   const mediaId=keys.find(k=>mediaFiles[k]===img);
   const el=document.createElement('div');el.className='gallery-item';
   const url=URL.createObjectURL(img.blob);
   if(img.type.startsWith('video/')){
-   el.innerHTML=`<video src="${url}" muted></video><div class="video-badge"><i class="fas fa-play"></i></div>`;
-   el.onclick=()=>openPreviewWindow('video',img.name,`<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><video src="${url}" controls autoplay style="max-width:100%;max-height:100%;"></video></div>`,'fa-video');
+   el.innerHTML='<video src="'+url+'" muted></video><div class="video-badge"><i class="fas fa-play"></i></div>';
+   el.onclick=()=>openPreviewWindow('video',img.name,'<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><video src="'+url+'" controls autoplay style="max-width:100%;max-height:100%;"></video></div>','fa-video');
   }else{
-   el.innerHTML=`<img src="${url}">`;
-   el.onclick=()=>openPreviewWindow('image',img.name,`<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="${url}" style="max-width:100%;max-height:100%;object-fit:contain;"></div>`,'fa-image');
+   el.innerHTML='<img src="'+url+'">';
+   el.onclick=()=>openPreviewWindow('image',img.name,'<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#000;"><img src="'+url+'" style="max-width:100%;max-height:100%;object-fit:contain;"></div>','fa-image');
   }
   el.oncontextmenu=e=>{e.preventDefault();e.stopPropagation();targetMediaForAction=mediaId;$('gallery-delete-btn').style.display='flex';showCtxMenu(e.pageX,e.pageY,'gallery-ctx-menu');};
   container.appendChild(el);
@@ -1098,7 +1319,17 @@ function switchMusicTab(tab,el){
  const win=el.closest('.window');
  win.querySelectorAll('.music-nav').forEach(n=>n.classList.remove('active'));el.classList.add('active');
  win.querySelectorAll('.music-view').forEach(v=>v.classList.remove('active'));
- win.querySelector(`#music-${tab}-view`).classList.add('active');
+ win.querySelector('#music-'+tab+'-view').classList.add('active');
+}
+function parseTrackInfo(fileName) {
+ let name = fileName.replace(/\.[^/.]+$/, "");
+ let artist = "Unknown Artist";
+ if (name.includes(" - ")) {
+  const parts = name.split(" - ");
+  artist = parts[0].trim();
+  name = parts.slice(1).join(" - ").trim();
+ }
+ return { name, artist };
 }
 async function initMusicPlayer(){
  const mediaFiles=await getFromDB(STORE_FILES,'media_files')||{};
@@ -1108,18 +1339,48 @@ async function initMusicPlayer(){
   if(sysBlob)systemTrack={name:'QuadroOS download music.m4a',type:'audio/m4a',blob:sysBlob,id:SYS_MUSIC_ID,artist:'QuadroOS System File'};
  }
  playlist=[];if(systemTrack)playlist.push(systemTrack);
- for(const key of Object.keys(mediaFiles)){const f=mediaFiles[key];if(f.type&&f.type.startsWith('audio/'))playlist.push({...f,id:key,artist:'Unknown Artist'});}
+ for(const key of Object.keys(mediaFiles)){const f=mediaFiles[key];if(f.type&&f.type.startsWith('audio/'))playlist.push(Object.assign({},f,{id:key}));}
  const tbody=$('mp-tbody');
  if(tbody){
   tbody.innerHTML='';
   if(playlist.length===0)tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:#666;padding:20px;">Нет музыки</td></tr>';
-  else playlist.forEach((track,idx)=>{const tr=document.createElement('tr');tr.className='track-row';tr.onclick=()=>loadTrack(idx);tr.innerHTML=`<td>${idx+1}</td><td>${track.name}</td><td>${track.artist||'Unknown'}</td><td>--:--</td>`;tbody.appendChild(tr);});
+  else playlist.forEach((track,idx)=>{
+   const info = parseTrackInfo(track.name);
+   const tr=document.createElement('tr');tr.className='track-row';tr.onclick=()=>loadTrack(idx);
+   tr.innerHTML=`<td>${idx+1}</td><td>${info.name}</td><td>${info.artist}</td><td class="track-time">--:--</td>`;
+   tbody.appendChild(tr);
+   // Асинхронная загрузка длительности
+   const tempAudio = new Audio(URL.createObjectURL(track.blob));
+   tempAudio.addEventListener('loadedmetadata', () => {
+    const timeCell = tr.querySelector('.track-time');
+    if(timeCell) timeCell.textContent = formatTime(tempAudio.duration);
+   });
+  });
  }
  if(currentTrackIndex>=playlist.length)currentTrackIndex=-1;
  if(playlist.length>0&&currentTrackIndex===-1)loadTrack(0);
- else if(currentTrackIndex>=0){const t=playlist[currentTrackIndex];$('mp-title').textContent=t.name;$('mp-artist').textContent=t.artist||'QuadroOS Audio';updateDeleteButtonVisibility(t.id);}
+ else if(currentTrackIndex>=0){
+  const t=playlist[currentTrackIndex];
+  const info = parseTrackInfo(t.name);
+  $('mp-title').textContent=info.name;
+  $('mp-artist').textContent=info.artist;
+  updateDeleteButtonVisibility(t.id);
+  updateAlbumArt(t);
+ }
  audioPlayer.ontimeupdate=updateProgress;audioPlayer.onended=nextTrack;
  audioPlayer.onloadedmetadata=()=>{const d=$('mp-dur');if(d)d.textContent=formatTime(audioPlayer.duration);};
+}
+function updateAlbumArt(track) {
+ const artContainer = $('mp-album-art');
+ if(!artContainer) return;
+ let artHtml = '<i class="fas fa-music"></i>';
+ const baseName = track.name.replace(/\.[^/.]+$/, "");
+ // Ищем картинку с таким же именем
+ const coverTrack = playlist.find(t => t.type && t.type.startsWith('image/') && t.name.replace(/\.[^/.]+$/, "") === baseName);
+ if(coverTrack) {
+  artHtml = `<img src="${URL.createObjectURL(coverTrack.blob)}" style="width:100%;height:100%;object-fit:cover;">`;
+ }
+ artContainer.innerHTML = artHtml;
 }
 function updateDeleteButtonVisibility(trackId){const btn=$('mp-delete-btn');if(btn){btn.style.display='block';btn.dataset.trackId=trackId;}}
 async function deleteCurrentTrack(){
@@ -1128,16 +1389,19 @@ async function deleteCurrentTrack(){
  else{const mf=await getFromDB(STORE_FILES,'media_files');if(mf&&mf[trackId]){delete mf[trackId];await saveToDB(STORE_FILES,'media_files',mf);}}
  audioPlayer.pause();audioPlayer.src='';
  $('mp-title').textContent='Нет треков';$('mp-artist').textContent='QuadroOS Audio';
+ $('mp-album-art').innerHTML='<i class="fas fa-music"></i>';
  btn.style.display='none';currentTrackIndex=-1;initMusicPlayer();
 }
-function formatTime(s){if(isNaN(s))return"0:00";const m=Math.floor(s/60),sec=Math.floor(s%60);return`${m}:${sec<10?'0':''}${sec}`;}
+function formatTime(s){if(isNaN(s))return"0:00";const m=Math.floor(s/60),sec=Math.floor(s%60);return m+':'+(sec<10?'0':'')+sec;}
 function loadTrack(index){
  if(index<0||index>=playlist.length)return;
  currentTrackIndex=index;const track=playlist[index];
  audioPlayer.src=URL.createObjectURL(track.blob);
+ const info = parseTrackInfo(track.name);
  const t=$('mp-title'),a=$('mp-artist');
- if(t)t.textContent=track.name;if(a)a.textContent=track.artist||'QuadroOS Audio';
+ if(t)t.textContent=info.name;if(a)a.textContent=info.artist;
  updateDeleteButtonVisibility(track.id);
+ updateAlbumArt(track);
  document.querySelectorAll('.track-row').forEach((r,i)=>r.classList.toggle('playing',i===index));
  audioPlayer.play().then(()=>{const b=$('mp-play-btn');if(b)b.innerHTML='<i class="fas fa-pause"></i>';}).catch(()=>{});
 }
@@ -1174,9 +1438,10 @@ function updateTaskbar(){
   if(w.id==='mydevice')icon='fa-desktop';else if(w.id==='trash')icon='fa-trash';else if(w.id==='settings')icon='fa-cog';
   else if(w.id==='explorer')icon='fa-folder-open';else if(w.id==='gallery')icon='fa-images';else if(w.id==='music')icon='fa-music';
   else if(w.id==='stats')icon='fa-chart-pie';else if(w.id==='browser')icon='fa-globe';else if(w.id==='installer')icon='fa-download';
+  else if(w.id==='htmleditor')icon='fa-code';else if(w.id==='personalization')icon='fa-palette';
   else if(w.id==='preview-image')icon='fa-image';else if(w.id==='preview-video')icon='fa-video';
   else if(w.id.startsWith('file_'))icon=w.id.includes('html')?'fa-code':'fa-file-alt';
-  item.innerHTML=`<i class="fas ${icon}"></i>`;
+  item.innerHTML='<i class="fas '+icon+'"></i>';
   item.onclick=()=>{if(w.id===activeWindowId&&!w.minimized)toggleMinimize(w.id);else{if(w.minimized)toggleMinimize(w.id);focusWindow(w.id);}};
   container.appendChild(item);
  });
@@ -1195,7 +1460,7 @@ $('app-search').addEventListener('input',e=>{
  const term=e.target.value.toLowerCase();
  document.querySelectorAll('#start-menu-list .menu-item').forEach(item=>{
   const text=item.textContent.toLowerCase();const app=item.dataset.app;
-  if(app==='stats'||app==='installer'){item.style.display=(text.includes(term)&&term.length>0)?'flex':'none';}
+  if(app==='stats'||app==='installer'||app==='personalization'){item.style.display=(text.includes(term)&&term.length>0)?'flex':'none';}
   else{item.style.display=text.includes(term)?'flex':'none';}
  });
 });
@@ -1207,6 +1472,83 @@ function hideShutdownOverlay(){$('shutdown-overlay').classList.add('hidden-scree
 function sysShutdown(){hideMenus();stopBootMusic();showShutdownOverlay('Завершение работы','Сохранение данных...');setTimeout(()=>{$('shutdown-sub').textContent='Выключение...';setTimeout(()=>{if(tg&&typeof tg.close==='function')tg.close();else window.close();setTimeout(()=>location.href='about:blank',1000);},1500);},2000);}
 function sysRestart(){hideMenus();stopBootMusic();showShutdownOverlay('Перезагрузка','Сохранение настроек...');setTimeout(()=>location.reload(),2000);}
 function refreshDesktop(){loadDesktop();hideMenus();}
+
+/* === СКАЧИВАНИЕ НА УСТРОЙСТВО === */
+async function downloadToDeviceCurrent() {
+ hideMenus();
+ let blob, name;
+ if (targetFileForAction) {
+  const files = await getFromDB(STORE_FILES, 'user_files');
+  const item = files[targetFileForAction];
+  blob = new Blob([item.content], {type: item.type === 'html' ? 'text/html' : 'text/plain'});
+  name = item.name;
+ } else if (targetMediaForAction) {
+  const media = await getFromDB(STORE_FILES, 'media_files');
+  const item = media[targetMediaForAction];
+  blob = item.blob;
+  name = item.name;
+ } else if (explorerFileForAction) {
+  const files = await getFromDB(STORE_FILES, 'user_files');
+  const media = await getFromDB(STORE_FILES, 'media_files');
+  const item = files[explorerFileForAction] || media[explorerFileForAction];
+  if(item) {
+   blob = item.content ? new Blob([item.content], {type: 'text/plain'}) : item.blob;
+   name = item.name;
+  }
+ }
+ if(blob && name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Файл скачан на устройство');
+ }
+}
+
+/* === ПЕРСОНАЛИЗАЦИЯ === */
+async function loadPersonalizationSettings() {
+ const color = await getFromDB(STORE_SYS, 'theme_color') || '#00d4ff';
+ const opacity = await getFromDB(STORE_SYS, 'theme_opacity') || 0.85;
+ const reflection = await getFromDB(STORE_SYS, 'theme_reflection') || false;
+ const cInput = $('pers-color'); if(cInput) cInput.value = color;
+ const oInput = $('pers-opacity'); if(oInput) oInput.value = opacity;
+ const rInput = $('pers-reflection'); if(rInput) rInput.checked = reflection;
+ applyThemeToDOM(color, opacity, reflection);
+}
+function applyThemeToDOM(color, opacity, reflection) {
+ document.documentElement.style.setProperty('--primary', color);
+ document.documentElement.style.setProperty('--glass', `rgba(10,14,39,${opacity})`);
+ document.documentElement.style.setProperty('--win-bg', `rgba(30,30,30,${opacity})`);
+ document.documentElement.style.setProperty('--win-header', `rgba(45,45,45,${opacity})`);
+ document.body.classList.toggle('theme-reflection', reflection);
+}
+async function applyPersonalizationColor(val) {
+ await saveToDB(STORE_SYS, 'theme_color', val);
+ applyThemeToDOM(val, await getFromDB(STORE_SYS, 'theme_opacity')||0.85, await getFromDB(STORE_SYS, 'theme_reflection')||false);
+}
+async function applyPersonalizationOpacity(val) {
+ await saveToDB(STORE_SYS, 'theme_opacity', val);
+ applyThemeToDOM(await getFromDB(STORE_SYS, 'theme_color')||'#00d4ff', val, await getFromDB(STORE_SYS, 'theme_reflection')||false);
+}
+async function applyPersonalizationReflection(val) {
+ await saveToDB(STORE_SYS, 'theme_reflection', val);
+ applyThemeToDOM(await getFromDB(STORE_SYS, 'theme_color')||'#00d4ff', await getFromDB(STORE_SYS, 'theme_opacity')||0.85, val);
+}
+async function applyPersonalizationWallpaper(input) {
+ const file = input.files[0]; if(!file) return;
+ const reader = new FileReader();
+ reader.onload = async (e) => {
+  const blob = new Blob([e.target.result], {type: file.type});
+  const t = file.type.startsWith('video/') ? 'video' : 'image';
+  await saveToDB(STORE_SYS, 'custom_wallpaper', {type: t, blob: blob});
+  applySystemAssets({type: t, blob: blob});
+  toast('Обои успешно применены');
+ };
+ reader.readAsArrayBuffer(file);
+}
+
 /* === УСТАНОВЩИК === */
 async function startReinstall(){
  closeWindow('installer');
@@ -1260,7 +1602,7 @@ async function doUninstall(){
  await delFromDB(STORE_FILES,'user_files');await delFromDB(STORE_FILES,'media_files');await delFromDB(STORE_ICONS,'positions');
  $('dl-status').textContent='Завершение';
  for(let p=90;p<=100;p++){$('dl-bar').style.width=p+'%';await sleep(30);}
- await delFromDB(STORE_SYS,'FirstLoad');await delFromDB(STORE_SYS,'custom_wallpaper');await delFromDB(STORE_SYS,'hidden_tracks');await delFromDB(STORE_SYS,'gpu_accel');await delFromDB(STORE_SYS,'limit_enabled');
+ await delFromDB(STORE_SYS,'FirstLoad');await delFromDB(STORE_SYS,'custom_wallpaper');await delFromDB(STORE_SYS,'hidden_tracks');await delFromDB(STORE_SYS,'gpu_accel');await delFromDB(STORE_SYS,'limit_enabled');await delFromDB(STORE_SYS,'theme_color');await delFromDB(STORE_SYS,'theme_opacity');await delFromDB(STORE_SYS,'theme_reflection');
  await sleep(500);
  await deleteDatabase();
  screen.classList.add('hidden-screen');
@@ -1273,7 +1615,7 @@ async function doUninstall(){
  $('desktop-video-bg').style.display='none';
  $('start-btn').innerHTML='<i class="fas fa-bars"></i>';
  $('boot-logo-el').className='boot-logo-fallback';$('boot-logo-el').textContent='Q';
- document.body.classList.remove('gpu-accel');
+ document.body.classList.remove('gpu-accel');document.body.classList.remove('theme-reflection');
  await initDB();
  showPrivacyModal();
 }
