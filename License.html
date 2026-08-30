@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuadroOS — Политика конфиденциальности и Условия использования</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet">
+<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+<style>
+:root {
+  --black: #060608;
+  --surface: #0b0b0f;
+  --surface-2: #101016;
+  --white: #f5f5f7;
+  --gray-300: #c9c9d1;
+  --gray-400: #9a9aa5;
+  --gray-500: #6f6f7c;
+  --line: rgba(255,255,255,0.09);
+  --line-strong: rgba(255,255,255,0.22);
+  --neon: rgba(255,255,255,0.55);
+  --glow-sm: 0 0 12px rgba(255,255,255,0.12);
+  --glow-md: 0 0 24px rgba(255,255,255,0.14);
+  --glow-lg: 0 0 40px rgba(255,255,255,0.16);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--black);
+  color: var(--gray-300);
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ===== Фон ===== */
+.bg-glow {
+  position: fixed; inset: 0; z-index: -2;
+  background:
+    radial-gradient(ellipse 70% 45% at 50% -12%, rgba(255,255,255,0.075), transparent 65%),
+    radial-gradient(ellipse 50% 40% at 85% 110%, rgba(255,255,255,0.04), transparent 60%),
+    var(--black);
+}
+.bg-grid {
+  position: fixed; inset: 0; z-index: -1;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 85% 60% at 50% 0%, black 20%, transparent 75%);
+  pointer-events: none;
+}
+
+iconify-icon { font-size: 20px; color: inherit; display: inline-block; vertical-align: middle; }
+
+/* ===== Прогресс чтения ===== */
+.read-progress {
+  position: fixed; top: 0; left: 0;
+  height: 2px; width: 0%;
+  background: var(--white);
+  box-shadow: 0 0 14px rgba(255,255,255,0.7), 0 0 30px rgba(255,255,255,0.35);
+  z-index: 1000;
+}
+
+/* ===== Верхняя навигация ===== */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 60px;
+  background: rgba(6,6,8,0.82);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.03), 0 8px 30px rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px;
+  z-index: 900;
+}
+
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.brand-mark {
+  width: 30px; height: 30px; flex-shrink: 0;
+  background: var(--white); color: var(--black);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 14px;
+  border-radius: 5px;
+  box-shadow: var(--glow-sm);
+}
+.brand-name { font-weight: 700; font-size: 15px; letter-spacing: 0.02em; color: var(--white); white-space: nowrap; }
+.brand-sub { font-size: 12px; color: var(--gray-500); border-left: 1px solid var(--line); padding-left: 12px; white-space: nowrap; }
+
+.doc-version {
+  font-family: monospace; font-size: 11.5px;
+  letter-spacing: 1px;
+  color: var(--gray-400);
+  border: 1px solid var(--line-strong);
+  padding: 6px 14px; border-radius: 3px;
+  background: var(--surface);
+  white-space: nowrap;
+}
+
+/* ===== Шапка документа ===== */
+.doc-hero {
+  padding: 150px 24px 60px;
+  border-bottom: 1px solid var(--line);
+}
+.doc-hero-inner { max-width: 880px; margin: 0 auto; }
+
+.doc-tag {
+  display: inline-flex; align-items: center; gap: 12px;
+  font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--gray-400); font-weight: 600;
+  margin-bottom: 30px;
+  animation: fadeDown .7s ease both;
+}
+.doc-tag::before {
+  content: ''; width: 36px; height: 1px;
+  background: var(--white);
+  box-shadow: 0 0 10px rgba(255,255,255,0.6);
+}
+
+.doc-hero h1 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: clamp(30px, 5vw, 52px);
+  font-weight: 600;
+  line-height: 1.16;
+  letter-spacing: -0.01em;
+  color: var(--white);
+  text-shadow: 0 0 40px rgba(255,255,255,0.14);
+  animation: fadeUp .8s .1s ease both;
+}
+
+.doc-hero .subtitle {
+  margin-top: 20px;
+  font-size: 16px;
+  color: var(--gray-400);
+  max-width: 660px;
+  animation: fadeUp .8s .22s ease both;
+}
+
+/* Мета-плитки */
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  margin-top: 46px;
+  animation: fadeUp .8s .34s ease both;
+}
+.meta-item { background: var(--surface); padding: 18px 22px; transition: background .3s, box-shadow .3s; }
+.meta-item:hover { background: var(--surface-2); box-shadow: inset 0 0 30px rgba(255,255,255,0.03); }
+.meta-item .label {
+  font-size: 10.5px; letter-spacing: 1.8px; text-transform: uppercase;
+  color: var(--gray-500); font-weight: 600; margin-bottom: 6px;
+  display: flex; align-items: center; gap: 7px;
+}
+.meta-item .value { font-size: 14.5px; font-weight: 600; color: var(--white); }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes fadeDown { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
+
+/* ===== Полоса технологий ===== */
+.trust-strip {
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  padding: 26px 24px;
+}
+.trust-inner {
+  max-width: 880px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 22px;
+}
+.trust-label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--gray-500); font-weight: 600; }
+.trust-logos { display: flex; align-items: center; gap: 36px; flex-wrap: wrap; }
+.trust-item {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--gray-400);
+  transition: color .3s, text-shadow .3s, filter .3s;
+  font-size: 13.5px; font-weight: 600;
+}
+.trust-item iconify-icon { font-size: 23px; }
+.trust-item:hover {
+  color: var(--white);
+  text-shadow: 0 0 14px rgba(255,255,255,0.5);
+}
+
+/* ===== Лейаут ===== */
+.layout {
+  max-width: 1200px; margin: 0 auto;
+  padding: 64px 24px 110px;
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 64px;
+  align-items: start;
+}
+
+/* Оглавление */
+.toc {
+  position: sticky; top: 92px;
+  border-left: 1px solid var(--line);
+}
+.toc-title {
+  font-size: 10.5px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--gray-500); font-weight: 700;
+  padding-left: 20px; margin-bottom: 14px;
+}
+.toc a {
+  display: block;
+  padding: 7px 20px;
+  color: var(--gray-500);
+  text-decoration: none;
+  font-size: 13.5px;
+  border-left: 2px solid transparent;
+  margin-left: -1px;
+  transition: all .2s;
+}
+.toc a:hover { color: var(--gray-300); }
+.toc a.active {
+  color: var(--white);
+  border-left-color: var(--white);
+  font-weight: 600;
+  text-shadow: 0 0 12px rgba(255,255,255,0.4);
+}
+
+/* ===== Секции ===== */
+.section {
+  margin-bottom: 56px;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity .7s ease, transform .7s cubic-bezier(.22,1,.36,1);
+}
+.section.visible { opacity: 1; transform: none; }
+
+.section-head {
+  display: flex; align-items: center; gap: 18px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line-strong);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04);
+  margin-bottom: 28px;
+}
+.section-icon {
+  width: 46px; height: 46px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--white);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  border-radius: 6px;
+  box-shadow: var(--glow-sm);
+  transition: box-shadow .3s, border-color .3s;
+}
+.section:hover .section-icon {
+  border-color: rgba(255,255,255,0.4);
+  box-shadow: var(--glow-md);
+}
+.section-num-label {
+  font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase;
+  color: var(--gray-500); font-weight: 700; margin-bottom: 3px;
+}
+.section-head h2 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: clamp(20px, 2.6vw, 26px);
+  font-weight: 600;
+  color: var(--white);
+  letter-spacing: -0.01em;
+  text-shadow: 0 0 26px rgba(255,255,255,0.12);
+}
+
+.section p { color: var(--gray-300); font-size: 15px; margin-bottom: 16px; }
+.section p:last-child { margin-bottom: 0; }
+b, strong { color: var(--white); font-weight: 600; }
+
+/* Пункты */
+.clause {
+  display: flex; gap: 20px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+  transition: background .3s;
+}
+.clause:last-of-type { border-bottom: none; }
+.clause-num {
+  font-family: monospace;
+  font-size: 13px;
+  color: var(--gray-500);
+  min-width: 46px;
+  padding-top: 3px;
+  font-weight: 500;
+}
+.clause-body { flex: 1; color: var(--gray-300); font-size: 15px; }
+.clause-body b { color: var(--white); }
+
+.mono {
+  font-family: monospace; font-size: 13px;
+  background: var(--surface-2);
+  padding: 2px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  color: var(--white);
+  box-shadow: var(--glow-sm);
+}
+
+/* Вложенные списки — маркер ● */
+.sub-list { margin-top: 12px; list-style: none; }
+.sub-list li {
+  position: relative;
+  padding-left: 26px;
+  margin-bottom: 10px;
+  color: var(--gray-300);
+  font-size: 14.5px;
+}
+.sub-list li::before {
+  content: '●';
+  position: absolute; left: 2px; top: 0;
+  font-size: 9px;
+  line-height: 2.1;
+  color: var(--white);
+  text-shadow: 0 0 8px rgba(255,255,255,0.6);
+}
+
+/* Официальное уведомление */
+.notice {
+  display: flex; gap: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--white);
+  box-shadow: -6px 0 24px -8px rgba(255,255,255,0.12);
+  padding: 20px 24px;
+  margin: 22px 0;
+  border-radius: 0 6px 6px 0;
+}
+.notice iconify-icon { font-size: 20px; flex-shrink: 0; margin-top: 3px; color: var(--white); }
+.notice p { margin: 0; font-size: 14px; color: var(--gray-300); }
+
+/* Блок согласия */
+.accept-block {
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  box-shadow: var(--glow-md), inset 0 0 60px rgba(255,255,255,0.02);
+  padding: 48px;
+  margin-top: 20px;
+  position: relative;
+  border-radius: 8px;
+}
+.accept-block::before {
+  content: 'ПОДТВЕРЖДЕНИЕ';
+  position: absolute; top: -9px; left: 40px;
+  background: var(--black);
+  padding: 0 14px;
+  font-size: 10.5px; letter-spacing: 3px;
+  font-weight: 700; color: var(--gray-500);
+}
+.accept-block h3 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 22px; font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--white);
+  text-shadow: 0 0 22px rgba(255,255,255,0.12);
+}
+.accept-block p { font-size: 14.5px; color: var(--gray-300); }
+
+.accept-check {
+  display: flex; align-items: center; gap: 14px;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  font-size: 14px; font-weight: 500; color: var(--white);
+  cursor: pointer;
+  user-select: none;
+}
+.checkbox {
+  width: 21px; height: 21px;
+  border: 1.5px solid var(--line-strong);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 3px;
+  transition: all .25s;
+}
+.checkbox iconify-icon { font-size: 13px; color: var(--black); opacity: 0; transition: opacity .2s; }
+.accept-check.checked .checkbox {
+  background: var(--white);
+  border-color: var(--white);
+  box-shadow: 0 0 16px rgba(255,255,255,0.5);
+}
+.accept-check.checked .checkbox iconify-icon { opacity: 1; }
+
+.sig-row { display: flex; gap: 40px; margin-top: 36px; flex-wrap: wrap; }
+.sig-field { flex: 1; min-width: 200px; }
+.sig-line { border-bottom: 1px solid var(--line-strong); height: 34px; }
+.sig-label { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-500); margin-top: 8px; font-weight: 600; }
+
+/* Футер */
+.footer {
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  padding: 48px 24px;
+}
+.footer-inner {
+  max-width: 1200px; margin: 0 auto;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 20px;
+}
+.footer .brand-sub { border: none; padding: 0; }
+.footer-legal { font-size: 12.5px; color: var(--gray-500); }
+.footer-mono { font-family: monospace; font-size: 11.5px; letter-spacing: 1.5px; color: var(--gray-500); }
+
+/* ================================================
+   АДАПТАЦИЯ ПОД УСТРОЙСТВА
+================================================ */
+
+/* Планшет */
+@media (max-width: 1024px) {
+  .layout { gap: 40px; grid-template-columns: 220px 1fr; }
+}
+
+/* Мобильные — колонка в столбик */
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; gap: 36px; padding-top: 44px; }
+
+  .toc {
+    position: static;
+    border-left: none;
+    border-top: 1px solid var(--line);
+    padding-top: 18px;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  .toc-title { display: none; }
+  .toc a {
+    display: inline-block;
+    border-left: none;
+    border: 1px solid var(--line);
+    border-radius: 100px;
+    padding: 8px 16px;
+    margin: 0 8px 0 0;
+  }
+  .toc a.active { border-color: var(--white); box-shadow: var(--glow-sm); }
+
+  .doc-hero { padding-top: 110px; }
+  .brand-sub { display: none; }
+  .trust-inner { justify-content: center; text-align: center; }
+}
+
+/* Маленькие экраны */
+@media (max-width: 560px) {
+  .topbar { padding: 0 16px; }
+  .doc-version { display: none; }
+  .doc-hero { padding: 96px 18px 44px; }
+  .doc-hero .subtitle { font-size: 14.5px; }
+  .layout { padding: 36px 18px 80px; }
+
+  .meta-grid { grid-template-columns: 1fr 1fr; }
+  .meta-item { padding: 14px 16px; }
+  .meta-item .label { font-size: 9px; letter-spacing: 1.2px; }
+  .meta-item .value { font-size: 13px; }
+
+  .section-head { gap: 14px; }
+  .section-icon { width: 40px; height: 40px; }
+  .section-icon iconify-icon { font-size: 18px; }
+
+  .clause { flex-direction: column; gap: 6px; padding: 16px 0; }
+  .clause-num { padding-top: 0; }
+
+  .notice { flex-direction: column; gap: 10px; padding: 18px; }
+
+  .accept-block { padding: 34px 22px; }
+  .accept-block::before { left: 24px; }
+  .sig-row { gap: 26px; }
+
+  .trust-logos { gap: 22px; }
+  .footer-inner { flex-direction: column; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-glow"></div>
+<div class="bg-grid"></div>
+<div class="read-progress" id="readProgress"></div>
+
+<!-- ВЕРХНЯЯ ПАНЕЛЬ -->
+<nav class="topbar">
+  <div class="brand">
+    <div class="brand-mark">Q</div>
+    <span class="brand-name">QuadroOS</span>
+    <span class="brand-sub">Юридическая документация</span>
+  </div>
+  <span class="doc-version">DOC. REV 2.0 / 30.08.2026</span>
+</nav>
+
+<!-- ШАПКА ДОКУМЕНТА -->
+<header class="doc-hero">
+  <div class="doc-hero-inner">
+    <div class="doc-tag">Официальный документ</div>
+    <h1>Политика конфиденциальности и Условия использования программного обеспечения QuadroOS</h1>
+    <p class="subtitle">Правовые основы работы с Сервисом: порядок обработки пользовательских данных, распределение ответственности Сторон, лицензионные условия и заключительные положения.</p>
+    <div class="meta-grid">
+      <div class="meta-item">
+        <div class="label"><iconify-icon icon="lucide:calendar"></iconify-icon>Дата вступления в силу</div>
+        <div class="value">30 августа 2026 г.</div>
+      </div>
+      <div class="meta-item">
+        <div class="label"><iconify-icon icon="lucide:file-stack"></iconify-icon>Версия документа</div>
+        <div class="value">Редакция 2.0</div>
+      </div>
+      <div class="meta-item">
+        <div class="label"><iconify-icon icon="lucide:hard-drive"></iconify-icon>Хранение данных</div>
+        <div class="value">Локально · IndexedDB</div>
+      </div>
+      <div class="meta-item">
+        <div class="label"><iconify-icon icon="lucide:globe"></iconify-icon>Тип системы</div>
+        <div class="value">Веб-приложение</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ПОЛОСА ТЕХНОЛОГИЙ -->
+<div class="trust-strip">
+  <div class="trust-inner">
+    <span class="trust-label">Технологии</span>
+    <div class="trust-logos">
+      <div class="trust-item"><iconify-icon icon="mdi:github"></iconify-icon>GitHub</div>
+      <div class="trust-item"><iconify-icon icon="lucide:database"></iconify-icon>IndexedDB</div>
+      <div class="trust-item"><iconify-icon icon="mdi:language-html5"></iconify-icon>HTML</div>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- ОГЛАВЛЕНИЕ -->
+  <aside class="toc">
+    <div class="toc-title">Содержание</div>
+    <a href="#s0">Преамбула</a>
+    <a href="#s1">1. Сбор и обработка данных</a>
+    <a href="#s2">2. Безопасность устройства</a>
+    <a href="#s3">3. Риски утечки данных</a>
+    <a href="#s4">4. Стабильность работы</a>
+    <a href="#s5">5. Интеллектуальная собственность</a>
+    <a href="#s6">6. Прекращение использования</a>
+    <a href="#s7">7. Применимое право</a>
+    <a href="#s8">8. Контактная информация</a>
+    <a href="#s9">9. Заключительные положения</a>
+  </aside>
+
+  <!-- ДОКУМЕНТ -->
+  <main>
+
+    <!-- ПРЕАМБУЛА -->
+    <section class="section" id="s0">
+      <div class="section-head">
+        <div class="section-icon"><iconify-icon icon="lucide:file-text"></iconify-icon></div>
+        <div>
+          <div class="section-num-label">Вводная часть</div>
+          <h2>Преамбула</h2>
+        </div>
+      </div>
+      <p>Настоящая Политика конфиденциальности и Условия использования (далее — <b>«Документ»</b>) регулируют порядок обработки пользовательских данных, определяют объём ответственности Сторон, а также устанавливают условия использования программного обеспечения QuadroOS (далее — <b>«Программное обеспечение»</b>, <b>«ПО»</b>, <b>«Сервис»</b>). Продолжая использование Сервиса, Пользователь подтверждает, что полностью ознакомился с настоящим Документом, понимает его содержание и безоговорочно принимает все изложенные в нём условия.</p>
+      <p>Разработчик оставляет за собой право в одностороннем порядке вносить изменения и дополнения в настоящий Документ без предварительного уведомления Пользователя. Актуальная редакция Документа публикуется в интерфейсе Программного обеспечения. Продолжение использования Сервиса после внесения изменений означает согласие Пользователя с обновлённой редакцией.</p>
+    </section>
+
+    <!-- РАЗДЕЛ 1 -->
+    <section class="section" id="s1">
+      <div class="section-head">
+        <div class="section-icon"><iconify-icon icon="lucide:database"></iconify-icon></div>
+        <div>
+          <div class="section-num-label">Раздел 1</div>
+          <h2>Сбор, хранение и обработка данных</h2>
+        </div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">1.1</div>
+        <div class="clause-body">Программное обеспечение QuadroOS функционирует по принципу локальной обработки данных. Все пользовательские данные, включая, но не ограничиваясь: созданные файлы, документы, настройки системы, персональные предпочтения, историю действий и метаданные сессий, хранятся исключительно на устройстве Пользователя с применением технологии <span class="mono">IndexedDB</span> и иных механизмов локального хранилища браузера.</div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">1.2</div>
+        <div class="clause-body">Разработчик не осуществляет сбор, передачу, копирование, агрегирование, профилирование или хранение персональных данных Пользователя на внешних серверах, в облачных хранилищах или иных удалённых инфраструктурных решениях.</div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">1.3</div>
+        <div class="clause-body">Разработчик не использует аналитические трекеры, рекламные идентификаторы, cookie-файлы маркетингового назначения и иные инструменты отслеживания поведения Пользователя в сети Интернет.</div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">1.4</div>
+        <div class="clause-body">Любые данные, генерируемые в процессе работы с Программным обеспечением, не покидают пределы устройства Пользователя за исключением случаев, прямо инициированных самим Пользователем (например, отправка файла через сторонний мессенджер).</div>
+      </div>
+    </section>
+
+    <!-- РАЗДЕЛ 2 -->
+    <section class="section" id="s2">
+      <div class="section-head">
+        <div class="section-icon"><iconify-icon icon="lucide:shield-check"></iconify-icon></div>
+        <div>
+          <div class="section-num-label">Раздел 2</div>
+          <h2>Безопасность устройства Пользователя</h2>
+        </div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">2.1</div>
+        <div class="clause-body">QuadroOS является веб-приложением, функционирующим в среде браузера. Безопасность данных, хранящихся в локальном хранилище браузера, напрямую зависит от общего уровня защищённости устройства Пользователя.</div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">2.2</div>
+        <div class="clause-body">
+          <b>Разработчик не несёт ответственности за:</b>
+          <ul class="sub-list">
+            <li>несанкционированный доступ к данным Пользователя, ставший возможным вследствие заражения устройства вредоносным, шпионским или иным деструктивным программным обеспечением;</li>
+            <li>перехват данных из локального хранилища браузера третьими лицами, получившими физический или удалённый доступ к устройству Пользователя;</li>
+            <li>повреждение, потерю или искажение данных вследствие переполнения оперативной или постоянной памяти устройства;</li>
+            <li>нестабильную работу операционной системы, браузера или иных программных компонентов, повлёкшую сбой в работе Сервиса;</li>
+            <li>последствия действий Пользователя или третьих лиц, направленных на обход встроенных механизмов защиты устройства.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">2.3</div>
+        <div class="clause-body">Программное обеспечение предоставляется по принципу <b>«как есть» (as is)</b>. Разработчик не гарантирует бесперебойную, безошибочную или полностью защищённую работу Сервиса в любых условиях эксплуатации.</div>
+      </div>
+    </section>
+
+    <!-- РАЗДЕЛ 3 -->
+    <section class="section" id="s3">
+      <div class="section-head">
+        <div class="section-icon"><iconify-icon icon="lucide:alert-triangle"></iconify-icon></div>
+        <div>
+          <div class="section-num-label">Раздел 3</div>
+          <h2>Риски утечки данных и ограничение ответственности</h2>
+        </div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">3.1</div>
+        <div class="clause-body">Разработчик применяет общепринятые современные методы и практики информационной безопасности при проектировании и разработке Программного обеспечения. Вместе с тем, ни одно программное решение не может быть гарантированно защищено от всех существующих и потенциальных угроз.</div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">3.2</div>
+        <div class="clause-body">
+          Пользователь осознаёт и принимает, что использование Программного обеспечения осуществляется исключительно на его собственный риск. <b>Разработчик не несёт ответственности за:</b>
+          <ul class="sub-list">
+            <li>утечку данных, произошедшую вследствие эксплуатации уязвимостей браузера, операционной системы или стороннего программного обеспечения, установленного на устройстве Пользователя;</li>
+            <li>несанкционированный доступ к данным со стороны третьих лиц, ставший возможным по причинам, не зависящим от Разработчика;</li>
+            <li>любой прямой, косвенный, случайный или последующий ущерб, возникший в результате использования или невозможности использования Сервиса;</li>
+            <li>потерю данных, вызванную действиями самого Пользователя, включая, но не ограничиваясь: очистку кэша браузера, удаление данных сайтов, сброс настроек браузера.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">3.3</div>
+        <div class="clause-body">Максимальная совокупная ответственность Разработчика по любым претензиям, связанным с использованием Программного обеспечения, ограничивается суммой, фактически уплаченной Пользователем за доступ к Сервису (при наличии платных функций), либо нулём, если Сервис предоставляется на безвозмездной основе.</div>
+      </div>
+    </section>
+
+    <!-- РАЗДЕЛ 4 -->
+    <section class="section" id="s4">
+      <div class="section-head">
+        <div class="section-icon"><iconify-icon icon="lucide:activity"></iconify-icon></div>
+        <div>
+          <div class="section-num-label">Раздел 4</div>
+          <h2>Стабильность работы и целостность данных</h2>
+        </div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">4.1</div>
+        <div class="clause-body">
+          Программное обеспечение QuadroOS находится в стадии активной разработки и тестирования. В связи с этим допускаются:
+          <ul class="sub-list">
+            <li>временные сбои в работе отдельных модулей и функций;</li>
+            <li>ошибки отображения интерфейса;</li>
+            <li>несовместимость с определёнными версиями браузеров или операционных систем;</li>
+            <li>потеря несохранённых данных при аварийном закрытии вкладки браузера, его зависании или принудительном завершении процесса.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">4.2</div>
+        <div class="clause-body">
+          <b>Политика автоматического удаления файлов.</b> В случае активации ограничения по объёму хранилища, при достижении уровня заполненности локального хранилища в <b>80 (восемьдесят) процентов</b> и более, файлы, возраст которых превышает <b>30 (тридцать) календарных дней</b>, подлежат автоматическому удалению без дополнительного уведомления Пользователя.
+        </div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">4.3</div>
+        <div class="clause-body">Пользователь обязуется самостоятельно и на регулярной основе создавать резервные копии значимых файлов и данных. Разработчик не предоставляет встроенных механизмов облачного резервного копирования и не несёт ответственности за утрату данных, не сохранённых Пользователем за пределами локального хранилища.</div>
+      </div>
+      <div class="notice">
+        <iconify-icon icon="lucide:info"></iconify-icon>
+        <p><b>Рекомендация:</b> регулярное резервное копирование критически важных файлов является обязанностью Пользователя и служит единственной гарантией сохранности данных в условиях, описанных в пунктах 4.1–4.3 настоящего Документа.</p>
+      </div>
+    </section>
+
+    <!-- РАЗДЕЛ 5 -->
+    <section class="section" id="s5">
+      <div class="section-head">
+        <div class="section-icon"><iconify-icon icon="lucide:copyright"></iconify-icon></div>
+        <div>
+          <div class="section-num-label">Раздел 5</div>
+          <h2>Интеллектуальная собственность</h2>
+        </div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">5.1</div>
+        <div class="clause-body">Все исключительные права на Программное обеспечение QuadroOS, включая исходный код, дизайн интерфейса, товарные знаки, логотипы и иные элементы, принадлежат Разработчику либо его лицензиарам.</div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">5.2</div>
+        <div class="clause-body">Пользователю предоставляется неисключительная, непередаваемая, отзывная лицензия на использование Программного обеспечения в личных или внутренних рабочих целях в соответствии с назначением Сервиса.</div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">5.3</div>
+        <div class="clause-body">Запрещается: декомпиляция, дизассемблирование, модификация исходного кода, создание производных продуктов, а также распространение Программного обеспечения без письменного согласия Разработчика.</div>
+      </div>
+    </section>
+
+    <!-- РАЗДЕЛ 6 -->
+    <section class="section" id="s6">
+      <div class="section-head">
+        <div class="section-icon"><iconify-icon icon="lucide:power-off"></iconify-icon></div>
+        <div>
+          <div class="section-num-label">Раздел 6</div>
+          <h2>Прекращение использования</h2>
+        </div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">6.1</div>
+        <div class="clause-body">Пользователь вправе в любой момент прекратить использование Программного обеспечения путём закрытия вкладки браузера и удаления данных Сервиса из локального хранилища.</div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">6.2</div>
+        <div class="clause-body">Разработчик оставляет за собой право приостановить или прекратить предоставление Сервиса, в том числе отдельных его функций, в любое время без предварительного уведомления и без объяснения причин.</div>
+      </div>
+    </section>
+
+    <!-- РАЗДЕЛ 7 -->
+    <section class="section" id="s7">
+      <div class="section-head">
+        <div class="section-icon"><iconify-icon icon="lucide:scale"></iconify-icon></div>
+        <div>
+          <div class="section-num-label">Раздел 7</div>
+          <h2>Применимое право и разрешение споров</h2>
+        </div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">7.1</div>
+        <div class="clause-body">Настоящий Документ регулируется и толкуется в соответствии с действующим законодательством юрисдикции Разработчика.</div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">7.2</div>
+        <div class="clause-body">Все споры и разногласия, возникающие из настоящего Документа или в связи с ним, разрешаются путём переговоров. В случае невозможности достижения соглашения спор передаётся на рассмотрение компетентного суда по месту нахождения Разработчика.</div>
+      </div>
+    </section>
+
+    <!-- РАЗДЕЛ 8 -->
+    <section class="section" id="s8">
+      <div class="section-head">
+        <div class="section-icon"><iconify-icon icon="lucide:mail"></iconify-icon></div>
+        <div>
+          <div class="section-num-label">Раздел 8</div>
+          <h2>Контактная информация</h2>
+        </div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">8.1</div>
+        <div class="clause-body">По всем вопросам, связанным с настоящей Политикой конфиденциальности и Условиями использования, Пользователь может обратиться к Разработчику посредством каналов связи, указанных в интерфейсе Программного обеспечения.</div>
+      </div>
+    </section>
+
+    <!-- РАЗДЕЛ 9 -->
+    <section class="section" id="s9">
+      <div class="section-head">
+        <div class="section-icon"><iconify-icon icon="lucide:stamp"></iconify-icon></div>
+        <div>
+          <div class="section-num-label">Раздел 9</div>
+          <h2>Заключительные положения</h2>
+        </div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">9.1</div>
+        <div class="clause-body">Если какое-либо положение настоящего Документа признано недействительным или неисполнимым, это не затрагивает действительность и исполнимость остальных положений.</div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">9.2</div>
+        <div class="clause-body">Неосуществление Разработчиком какого-либо права по настоящему Документу не является отказом от такого права.</div>
+      </div>
+      <div class="clause">
+        <div class="clause-num">9.3</div>
+        <div class="clause-body">Настоящий Документ составляет полное соглашение между Пользователем и Разработчиком в отношении использования Программного обеспечения QuadroOS и заменяет все предшествующие договорённости, устные или письменные.</div>
+      </div>
+    </section>
+
+    <!-- ПОДТВЕРЖДЕНИЕ -->
+    <section class="section">
+      <div class="accept-block">
+        <h3>Подтверждение согласия Пользователя</h3>
+        <p>Настоящим Пользователь подтверждает, что прочитал, понял и принимает все условия Политики конфиденциальности и Условий использования, а также осознаёт и принимает все риски, связанные с использованием Программного обеспечения QuadroOS.</p>
+        <div class="accept-check" id="acceptCheck">
+          <div class="checkbox"><iconify-icon icon="lucide:check"></iconify-icon></div>
+          Я прочитал политику конфиденциальности и принимаю все риски
+        </div>
+        <div class="sig-row">
+          <div class="sig-field">
+            <div class="sig-line"></div>
+            <div class="sig-label">Подпись Пользователя</div>
+          </div>
+          <div class="sig-field">
+            <div class="sig-line"></div>
+            <div class="sig-label">Дата</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ФУТЕР -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="brand">
+      <div class="brand-mark">Q</div>
+      <span class="brand-name">QuadroOS</span>
+      <span class="brand-sub">© 2026. Все права защищены.</span>
+    </div>
+    <div class="footer-mono">LEGAL DOC · REV 2.0 · EFFECTIVE 30.08.2026</div>
+    <div class="footer-legal">Документ носит информационно-правовой характер.</div>
+  </div>
+</footer>
+
+<script>
+// Появление секций при скролле
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.08 });
+document.querySelectorAll('.section').forEach(el => observer.observe(el));
+
+// Прогресс чтения
+window.addEventListener('scroll', () => {
+  const h = document.documentElement;
+  const p = h.scrollTop / (h.scrollHeight - h.clientHeight) * 100;
+  document.getElementById('readProgress').style.width = p + '%';
+});
+
+// Активный пункт оглавления
+const tocLinks = document.querySelectorAll('.toc a');
+const sections = [...document.querySelectorAll('.section[id]')];
+window.addEventListener('scroll', () => {
+  let current = sections[0]?.id;
+  sections.forEach(sec => {
+    if (window.scrollY >= sec.offsetTop - 160) current = sec.id;
+  });
+  tocLinks.forEach(link => {
+    link.classList.toggle('active', link.getAttribute('href') === '#' + current);
+  });
+});
+
+// Чекбокс согласия
+document.getElementById('acceptCheck').addEventListener('click', function() {
+  this.classList.toggle('checked');
+});
+</script>
+
+</body>
+</html>
