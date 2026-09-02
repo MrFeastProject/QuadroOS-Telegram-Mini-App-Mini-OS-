@@ -539,7 +539,7 @@ async function playNotificationSound() {
     } catch (e) { console.log('Notification sound error:', e); }
 }
 
-// Переопределение toast для воспроизведения звука уведомления
+// Переопределение toast для воспроизведения звука,уведомления
 const origToast = toast;
 toast = function(m) {
     origToast(m);
