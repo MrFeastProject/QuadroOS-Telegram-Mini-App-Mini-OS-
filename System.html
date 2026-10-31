@@ -1215,6 +1215,40 @@ html,body{max-width:100%;overflow-x:hidden!important;}
 @keyframes qosStatusPulse{0%,100%{opacity:.45}50%{opacity:1}}
 @media(max-width:520px){.qos-connected-loader{padding:16px}.qos-connected-card{border-radius:16px}}
 </style>
+<style id="qos-intro-style">
+#qos-intro{position:fixed;inset:0;z-index:2147483600;background:#000;display:none;align-items:center;justify-content:center;overflow:hidden}
+#qos-in-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+.qos-in-stage,.qos-in-spin{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:12vh 6vw 9vh;box-sizing:border-box}
+.qos-in-icon{width:min(190px,36vmin);height:min(190px,36vmin);display:grid;place-items:center;animation:qosInFloat 3.2s ease-in-out infinite}
+.qos-in-icon img{width:100%;height:100%;object-fit:contain;border-radius:28%;filter:drop-shadow(0 0 22px rgba(0,212,255,.45))}
+.qos-in-icon span{font-family:'Orbitron',sans-serif;font-size:min(96px,20vmin);color:#00d4ff;text-shadow:0 0 24px rgba(0,212,255,.7)}
+@keyframes qosInFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.qos-in-bar{position:relative;width:min(640px,72vw);height:10px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;box-shadow:inset 0 0 8px rgba(0,0,0,.8),0 0 0 1px rgba(0,212,255,.15)}
+.qos-in-fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:99px;background:linear-gradient(90deg,#00d4ff,#0066ff,#8a2be2,#ff2d95,#00d4ff);background-size:300% 100%;animation:qosInGrad 2.2s linear infinite;box-shadow:0 0 14px rgba(0,212,255,.65),0 0 28px rgba(138,43,226,.35);overflow:visible}
+@keyframes qosInGrad{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+.qos-in-fill::after{content:'';position:absolute;right:-2px;top:50%;width:14px;height:14px;margin-top:-7px;border-radius:50%;background:#fff;box-shadow:0 0 12px #fff,0 0 26px #00d4ff}
+.qos-in-part{position:absolute;bottom:-4px;display:block;border-radius:50%;background:#fff;box-shadow:0 0 6px #7fe9ff;opacity:0;animation:qosInPart linear infinite}
+@keyframes qosInPart{0%{transform:translateY(0) scale(.6);opacity:0}15%{opacity:1}100%{transform:translateY(-34px) scale(1);opacity:0}}
+.qos-in-dots{position:relative;width:46px;height:46px;animation:qosInSpin 1.6s linear infinite}
+.qos-in-dots i{position:absolute;left:50%;top:50%;width:7px;height:7px;margin:-3.5px;border-radius:50%;background:#00d4ff;box-shadow:0 0 8px rgba(0,212,255,.8);opacity:.2;animation:qosInBlink 1.6s linear infinite}
+.qos-in-dots i:nth-child(1){transform:translate(0,-22px)}
+.qos-in-dots i:nth-child(2){transform:translate(15.6px,-15.6px)}
+.qos-in-dots i:nth-child(3){transform:translate(22px,0)}
+.qos-in-dots i:nth-child(4){transform:translate(15.6px,15.6px)}
+.qos-in-dots i:nth-child(5){transform:translate(0,22px)}
+.qos-in-dots i:nth-child(6){transform:translate(-15.6px,15.6px)}
+.qos-in-dots i:nth-child(7){transform:translate(-22px,0)}
+.qos-in-dots i:nth-child(8){transform:translate(-15.6px,-15.6px)}
+.qos-in-dots i:nth-child(n){animation-delay:calc(var(--i,0)*0s)}
+.qos-in-dots i:nth-child(1){animation-delay:0s}.qos-in-dots i:nth-child(2){animation-delay:.2s}.qos-in-dots i:nth-child(3){animation-delay:.4s}.qos-in-dots i:nth-child(4){animation-delay:.6s}.qos-in-dots i:nth-child(5){animation-delay:.8s}.qos-in-dots i:nth-child(6){animation-delay:1s}.qos-in-dots i:nth-child(7){animation-delay:1.2s}.qos-in-dots i:nth-child(8){animation-delay:1.4s}
+@keyframes qosInSpin{to{transform:rotate(360deg)}}
+@keyframes qosInBlink{0%,100%{opacity:.15}50%{opacity:1}}
+.qos-in-spin{justify-content:space-between}
+.qos-in-spin .qos-in-dots{margin:auto 0}
+.qos-in-msg{text-align:center;font-family:'Rajdhani','Segoe UI',system-ui,sans-serif;color:#cfe9ff}
+.qos-in-msg b{display:block;font-size:20px;letter-spacing:1px;font-weight:700;color:#fff}
+.qos-in-msg span{display:block;margin-top:6px;font-size:15px;color:#7fe9ff;opacity:.85}
+</style>
 </head>
 <body>
 <div id="mobile-block" aria-hidden="true"></div>
@@ -1478,7 +1512,8 @@ checkMobileOrientation();
 // Дополнительные ресурсы для звуков
 const EXTRA_RESOURCES = [
 { id: 'startup_sound', url: 'https://raw.githubusercontent.com/SyntexHyperSoft/QuadroOS-Telegram-Mini-App-Mini-OS-/main/%D0%97%D0%B0%D0%BF%D1%83%D1%81%D0%BA%20QuadroOS.mp3' },
-{ id: 'notification_sound', url: 'https://raw.githubusercontent.com/SyntexHyperSoft/QuadroOS-Telegram-Mini-App-Mini-OS-/main/%D0%A3%D0%B2%D0%B5%D0%B4%D0%BE%D0%BC%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_QuadroOS.mp3' }
+{ id: 'notification_sound', url: 'https://raw.githubusercontent.com/SyntexHyperSoft/QuadroOS-Telegram-Mini-App-Mini-OS-/main/%D0%A3%D0%B2%D0%B5%D0%B4%D0%BE%D0%BC%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_QuadroOS.mp3' },
+{ id: 'intro_video', url: 'https://raw.githubusercontent.com/SyntexHyperSoft/SyntexHyperSoft-Database/refs/heads/main/SyntaxHyperSoft.mp4' }
 ];
 let startupAudio = null, notificationAudio = null;
 async function playStartupSound() {
@@ -1698,7 +1733,112 @@ window.addEventListener('resize',applyDeviceLayout,{passive:true});
 window.addEventListener('orientationchange',()=>setTimeout(applyDeviceLayout,120),{passive:true});
 if(window.visualViewport)window.visualViewport.addEventListener('resize',applyDeviceLayout,{passive:true});
 
-function startBootSequence(){const boot=$('boot-screen');const status=$('qos-boot-status');const version=$('qos-boot-version');$('desktop').style.display='none';$('taskbar').style.display='none';boot.classList.remove('hidden-screen');boot.style.display='flex';if(version)version.textContent='SYSTEM';const statuses=['Запуск системы','Проверка компонентов','Инициализация интерфейса','Подготовка рабочего пространства'];let step=0;if(status){status.textContent=statuses[0];const timer=setInterval(()=>{step++;if(step<statuses.length)status.textContent=statuses[step];else clearInterval(timer);},620);}setTimeout(()=>{boot.classList.add('hidden-screen');boot.style.display='none';runWelcomeText();},2500);}
+/* ===== QuadroOS intro: (видео) → иконка + анимированный бар до готовности → приветствие ===== */
+const QOS_INTRO_VIDEO={id:'intro_video',url:'https://raw.githubusercontent.com/SyntexHyperSoft/SyntexHyperSoft-Database/refs/heads/main/SyntaxHyperSoft.mp4'};
+const qosSleep=ms=>new Promise(r=>setTimeout(r,ms));
+const qosFrame=()=>new Promise(r=>requestAnimationFrame(()=>r()));
+function qosIntroHost(){
+  let host=document.getElementById('qos-intro');
+  if(host)return host;
+  host=document.createElement('div');host.id='qos-intro';
+  host.innerHTML=
+    '<div class="qos-in-spin" id="qos-in-spin" style="display:none">'+
+      '<div class="qos-in-icon" id="qos-in-icon-spin"></div>'+
+      '<div class="qos-in-dots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>'+
+      '<div class="qos-in-msg"><b>Обновление системы...</b><span>Подождите немного...</span></div>'+
+    '</div>'+
+    '<div class="qos-in-stage" id="qos-in-stage" style="display:none">'+
+      '<div class="qos-in-icon" id="qos-in-icon"></div>'+
+      '<div class="qos-in-bar"><div class="qos-in-fill" id="qos-in-fill"></div></div>'+
+    '</div>';
+  document.body.appendChild(host);
+  return host;
+}
+function qosSetIcon(id){const el=document.getElementById(id);if(el)el.innerHTML=sysIconUrl?'<img src="'+sysIconUrl+'" alt="">':'<span>Q</span>';}
+async function qosLoadBlobUrl(id){
+  try{const b=await getFromDB(STORE_RESOURCES,id);return b?URL.createObjectURL(b):null;}catch(e){return null;}
+}
+/* видео качается без таймаута: файл может быть большим */
+async function qosDownloadIntroVideo(){
+  try{
+    const r=await fetch(QOS_INTRO_VIDEO.url,{cache:'no-store'});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const blob=await r.blob();
+    await saveToDB(STORE_RESOURCES,QOS_INTRO_VIDEO.id,blob);
+    return URL.createObjectURL(blob);
+  }catch(e){console.warn('[intro] video download failed',e);return null;}
+}
+function qosPlayIntroVideo(host,url){
+  return new Promise(resolve=>{
+    const v=document.createElement('video');
+    v.id='qos-in-video';v.src=url;v.playsInline=true;v.preload='auto';
+    host.insertBefore(v,host.firstChild);
+    let done=false;
+    const finish=()=>{if(done)return;done=true;v.onended=null;v.onerror=null;v.remove();resolve();};
+    v.onended=finish;v.onerror=finish;
+    const p=v.play();
+    if(p&&p.catch)p.catch(()=>{v.muted=true;v.play().catch(finish);});
+  });
+}
+function qosDecodeImg(url){
+  return new Promise(res=>{if(!url)return res(true);const im=new Image();im.onload=()=>res(true);im.onerror=()=>res(true);im.src=url;});
+}
+/* рабочий стол считается готовым, когда отрисован и все его картинки загружены */
+async function qosDesktopReady(){
+  try{await loadDesktop();}catch(e){console.error('[intro] loadDesktop',e);$('desktop').style.display='block';$('taskbar').style.display='flex';}
+  try{if(document.fonts&&document.fonts.ready)await document.fonts.ready;}catch(e){}
+  const imgs=[...document.querySelectorAll('#desktop img, #taskbar img, #wall-bg-layer img')];
+  await Promise.all(imgs.map(im=>im.complete?true:new Promise(res=>{im.addEventListener('load',()=>res(true),{once:true});im.addEventListener('error',()=>res(true),{once:true});})));
+  await Promise.all([qosDecodeImg(sysIconUrl),qosDecodeImg(sysBgUrl),qosDecodeImg(sysBg2Url)]);
+  return true;
+}
+async function qosRunIntro(){
+  const host=qosIntroHost();
+  host.style.display='flex';host.style.opacity='1';
+  host.querySelectorAll('#qos-in-spin,#qos-in-stage').forEach(el=>el.style.display='none');
+  // 1) видео на чёрном экране, потом 2 секунды ожидания
+  let videoUrl=await qosLoadBlobUrl(QOS_INTRO_VIDEO.id);
+  if(!videoUrl){
+    // видео ещё не скачано (система установлена раньше): экран обновления, пока качается
+    const spin=document.getElementById('qos-in-spin');
+    if(spin){spin.style.display='flex';qosSetIcon('qos-in-icon-spin');}
+    videoUrl=await qosDownloadIntroVideo();
+    if(spin)spin.style.display='none';
+  }
+  if(videoUrl){
+    await qosPlayIntroVideo(host,videoUrl);
+    await qosSleep(2000);
+  }
+  // 2) иконка + анимированный бар, пока рабочий стол полностью не готов
+  qosSetIcon('qos-in-icon');
+  const stage=document.getElementById('qos-in-stage');
+  const fill=document.getElementById('qos-in-fill');
+  if(stage)stage.style.display='flex';
+  if(fill){
+    fill.innerHTML='';
+    for(let i=0;i<16;i++){const p=document.createElement('i');p.className='qos-in-part';p.style.left=(Math.random()*100)+'%';p.style.animationDelay=(Math.random()*1.6)+'s';p.style.animationDuration=(1.1+Math.random()*1.2)+'s';p.style.width=p.style.height=(2+Math.random()*3)+'px';fill.appendChild(p);}
+  }
+  try{playBootMusic();}catch(e){}
+  const state={done:false};
+  qosDesktopReady().then(()=>{state.done=true;});
+  qosSleep(60000).then(()=>{state.done=true;});
+  while(!state.done){
+    if(fill){fill.style.transition='none';fill.style.width='0%';}
+    await qosFrame();await qosFrame();
+    if(fill){fill.style.transition='width 2000ms linear';fill.style.width='100%';}
+    await qosSleep(2000);
+    if(state.done)break;
+    await qosSleep(1500);
+  }
+  // 3) рабочий стол готов: убираем экран загрузки и запускаем звук входа
+  try{stopBootMusic();}catch(e){}
+  try{playStartupSound();}catch(e){}
+  host.style.transition='opacity .45s ease';host.style.opacity='0';
+  await qosSleep(470);
+  host.style.display='none';host.style.transition='';
+  if(videoUrl){try{URL.revokeObjectURL(videoUrl);}catch(e){}}
+}
+function startBootSequence(){const boot=$('boot-screen');if(boot){boot.classList.add('hidden-screen');boot.style.display='none';}$('desktop').style.display='none';$('taskbar').style.display='none';qosRunIntro().catch(e=>console.error('[intro]',e));}
 async function playBootMusic(){try{const blob=await getFromDB(STORE_RESOURCES,'sys_music');if(blob){bootAudio=new Audio(URL.createObjectURL(blob));bootAudio.loop=true;applyBoostedVolume(bootAudio,0.7);const playPromise=bootAudio.play();if(playPromise!==undefined){playPromise.catch(error=>{console.log('Autoplay prevented:',error);});}}}catch(e){}}
 function stopBootMusic(){if(bootAudio){bootAudio.pause();bootAudio=null;}}
 function runWelcomeText(){playBootMusic();const wrap=$('welcome-text');wrap.classList.remove('hidden-screen');wrap.style.display='flex';const mark=$('qos-welcome-mark'),eyebrow=$('qos-welcome-eyebrow'),sub=$('qos-welcome-sub'),line=$('qos-welcome-line');if(mark)mark.classList.add('show');if(eyebrow)eyebrow.classList.add('show');if(sub)sub.classList.add('show');if(line)line.classList.add('show');const msgs=[$('msg1'),$('msg2'),$('msg3'),$('msg4')];msgs.forEach(m=>{if(m)m.classList.remove('show');});let index=0;const showNext=()=>{if(index>0&&msgs[index-1])msgs[index-1].classList.remove('show');const msg=msgs[index];if(!msg)return;msg.classList.add('show');index++;if(index<msgs.length){setTimeout(showNext,1800);}else{setTimeout(()=>{msg.classList.remove('show');if(sub)sub.classList.remove('show');if(line)line.classList.remove('show');if(mark)mark.classList.remove('show');if(eyebrow)eyebrow.classList.remove('show');wrap.classList.add('hidden-screen');wrap.style.display='none';const boot=$('boot-screen');if(boot){boot.classList.add('hidden-screen');boot.style.display='none';}stopBootMusic();playStartupSound();try{loadDesktop();}catch(e){console.error('loadDesktop error:',e);$('desktop').style.display='block';$('taskbar').style.display='flex';}},1500);}};setTimeout(showNext,450);}
